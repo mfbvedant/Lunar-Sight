@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LunarSight — Lunar Ice Detection & Pathfinding</title>
+    <meta name="description" content="Multi-Agent AI system for detecting water ice on the Moon's south pole and planning rover traverse paths using Chandrayaan-2 DFSAR data." />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700;900&family=Space+Mono&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0B0D1A;
+            --primary: #6C63FF;
+            --secondary: #00D4AA;
+            --accent: #FF6B9D;
+            --surface: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* === Fixed Navigation === */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            padding-top: 16px;
+            pointer-events: none;
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 95%;
+            max-width: 1400px;
+            padding: 12px 32px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 9999px;
+            box-shadow: 0 0 40px rgba(108, 99, 255, 0.15);
+            pointer-events: all;
+            transition: all 0.5s ease;
+        }
+
+        .navbar:hover {
+            box-shadow: 0 0 60px rgba(108, 99, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .nav-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #6C63FF, #FF6B9D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-brand:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-brand .moon-icon {
+            display: inline-block;
+            margin-right: 6px;
+            animation: moonPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes moonPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-link {
+            padding: 8px 20px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            border-radius: 9999px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        .nav-link:hover {
+            color: white;
+            text-shadow: 0 0 20px rgba(108, 99, 255, 0.5);
+        }
+
+        .nav-link:hover::before {
+            width: 60%;
+        }
+
+        .nav-link.active {
+            color: white;
+            background: rgba(108, 99, 255, 0.2);
+            box-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
+        }
+
+        .nav-link.active::before {
+            width: 60%;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* === Page Frame Container === */
+        .page-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .page-frame.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+            z-index: 5;
+        }
+
+        .page-frame.exiting {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.98);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* === Loading Indicator === */
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .loader.visible {
+            opacity: 1;
+        }
+
+        .loader-ring {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(108, 99, 255, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        /* === Page Transition Particles === */
+        .transition-particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+        }
+
+        /* === Mobile Menu === */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .mobile-toggle { display: block; }
+            .nav-links.open {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(11, 13, 26, 0.95);
+                backdrop-filter: blur(24px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                padding: 16px;
+                width: 90%;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="nav-container">
+        <nav class="navbar" id="main-nav">
+            <div class="nav-brand" onclick="navigateTo('hero')">
+                <span class="moon-icon">🌙</span>LunarSight
+            </div>
+            <ul class="nav-links" id="nav-links">
+                <li><a class="nav-link active" data-page="hero" onclick="navigateTo('hero')">Home</a></li>
+                <li><a class="nav-link" data-page="pipeline" onclick="navigateTo('pipeline')">Pipeline</a></li>
+                <li><a class="nav-link" data-page="agents" onclick="navigateTo('agents')">Agents</a></li>
+                <li><a class="nav-link" data-page="data-explorer" onclick="navigateTo('data-explorer')">Data Explorer</a></li>
+                <li><a class="nav-link" data-page="pathfinder" onclick="navigateTo('pathfinder')">Pathfinder</a></li>
+                <li><a class="nav-link" data-page="about" onclick="navigateTo('about')">About</a></li>
+            </ul>
+            <button class="mobile-toggle" onclick="toggleMobile()">
+                <span class="material-symbols-outlined" style="font-size:28px">menu</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loader" id="loader">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading mission data...</div>
+    </div>
+
+    <!-- Page Frames -->
+    <iframe class="page-frame active" id="frame-hero" src="pages/hero.html"></iframe>
+    <iframe class="page-frame" id="frame-pipeline" data-src="pages/pipeline.html"></iframe>
+    <iframe class="page-frame" id="frame-agents" data-src="pages/agents.html"></iframe>
+    <iframe class="page-frame" id="frame-data-explorer" data-src="pages/data-explorer.html"></iframe>
+    <iframe class="page-frame" id="frame-pathfinder" data-src="pages/pathfinder.html"></iframe>
+    <iframe class="page-frame" id="frame-about" data-src="pages/about.html"></iframe>
+
+    <script>
+        let currentPage = 'hero';
+        const loadedPages = new Set(['hero']);
+
+        function navigateTo(page) {
+            if (page === currentPage) return;
+
+            const loader = document.getElementById('loader');
+            const currentFrame = document.getElementById(`frame-${currentPage}`);
+            const nextFrame = document.getElementById(`frame-${page}`);
+
+            if (!nextFrame) return;
+
+            // Update nav
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('active', link.dataset.page === page);
+            });
+
+            // Spawn particles
+            spawnTransitionParticles();
+
+            // Exit current
+            currentFrame.classList.remove('active');
+            currentFrame.classList.add('exiting');
+
+            // Lazy-load the page if not yet loaded
+            if (!loadedPages.has(page)) {
+                loader.classList.add('visible');
+                const dataSrc = nextFrame.getAttribute('data-src');
+                if (dataSrc) {
+                    nextFrame.src = dataSrc;
+                    nextFrame.removeAttribute('data-src');
+                }
+                nextFrame.addEventListener('load', () => {
+                    loadedPages.add(page);
+                    loader.classList.remove('visible');
+                    showPage();
+                }, { once: true });
+            } else {
+                setTimeout(showPage, 100);
+            }
+
+            function showPage() {
+                currentFrame.classList.remove('exiting');
+                nextFrame.classList.add('active');
+                currentPage = page;
+
+                // Close mobile menu
+                document.getElementById('nav-links').classList.remove('open');
+            }
+        }
+
+        function toggleMobile() {
+            document.getElementById('nav-links').classList.toggle('open');
+        }
+
+        function spawnTransitionParticles() {
+            const count = 12;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'transition-particle';
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                const colors = ['#6C63FF', '#00D4AA', '#FF6B9D'];
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.width = (2 + Math.random() * 4) + 'px';
+                particle.style.height = particle.style.width;
+                document.body.appendChild(particle);
+
+                // Animate
+                particle.animate([
+                    { opacity: 0, transform: 'scale(0) translateY(0)' },
+                    { opacity: 1, transform: 'scale(1.5) translateY(-30px)' },
+                    { opacity: 0, transform: 'scale(0) translateY(-60px)' }
+                ], {
+                    duration: 600 + Math.random() * 400,
+                    easing: 'ease-out',
+                    delay: Math.random() * 200
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const pages = ['hero', 'pipeline', 'agents', 'data-explorer', 'pathfinder', 'about'];
+            const idx = pages.indexOf(currentPage);
+            if (e.key === 'ArrowRight' && idx < pages.length - 1) navigateTo(pages[idx + 1]);
+            if (e.key === 'ArrowLeft' && idx > 0) navigateTo(pages[idx - 1]);
+        });
+    </script>
+</body>
+</html>

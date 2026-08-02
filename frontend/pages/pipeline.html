@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LunarSight - Pipeline Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0B0D1A',
+                        primary: '#6C63FF',
+                        secondary: '#00D4AA',
+                        accent: '#FF6B9D',
+                        surface: 'rgba(255, 255, 255, 0.05)',
+                        'surface-hover': 'rgba(255, 255, 255, 0.1)',
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem",
+                        full: "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Space Grotesk", "sans-serif"],
+                        display: ["Space Grotesk", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Public Sans", "sans-serif"],
+                        mono: ["Space Mono", "monospace"]
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'flow-line': 'flowLine 1.5s linear infinite',
+                        'typewriter': 'typing 2s steps(40, end)',
+                        'slide-in-right': 'slideInRight 0.5s ease-out forwards',
+                        'staggered-fade': 'staggeredFade 0.6s ease-out forwards',
+                        'spin-slow': 'spin 3s linear infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(108, 99, 255, 0.4)' },
+                            '50%': { boxShadow: '0 0 25px rgba(108, 99, 255, 0.8)' },
+                        },
+                        flowLine: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(100%)' }
+                        },
+                        typing: {
+                            from: { width: '0' },
+                            to: { width: '100%' }
+                        },
+                        slideInRight: {
+                            '0%': { transform: 'translateX(20px)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        },
+                        staggeredFade: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0B0D1A;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(108, 99, 255, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(108, 99, 255, 0.6);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .terminal-text {
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: 2px solid transparent;
+        }
+        
+        .type-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1em;
+            background-color: #00D4AA;
+            vertical-align: middle;
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .flowing-line-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .flowing-particle {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 20%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #6C63FF, transparent);
+            transform: translateY(-50%);
+            animation: flowLine 2s linear infinite;
+        }
+        
+        /* Staggered animation delays for pipeline nodes */
+        .node-1 { animation-delay: 0.1s; }
+        .node-2 { animation-delay: 0.2s; }
+        .node-3 { animation-delay: 0.3s; }
+        .node-4 { animation-delay: 0.4s; }
+        .node-5 { animation-delay: 0.5s; }
+        
+        .decision-node {
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+    </style>
+</head>
+<body class="font-body min-h-screen flex flex-col relative">
+<!-- Background Shader -->
+<div class="fixed inset-0 z-[-1] pointer-events-none">
+
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#0B0D1A]/80 to-[#0B0D1A]"></div>
+</div>
+<!-- TopNavBar Component -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 bg-white/5 backdrop-blur-xl rounded-full mt-4 mx-auto w-[95%] max-w-7xl border border-white/10 shadow-2xl shadow-indigo-500/10">
+<div class="font-headline text-2xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-[#6C63FF] to-[#FF6B9D] hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 cursor-pointer">
+            LunarSight
+        </div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="font-headline text-lg uppercase tracking-wider font-bold text-[#6C63FF] border-b-2 border-[#6C63FF] pb-1 hover:scale-105 transition-all duration-300" href="#">Pipeline</a>
+<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">Agents</a>
+<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">Data Explorer</a>
+<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">Pathfinder</a>
+<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">About</a>
+</div>
+<div class="flex items-center space-x-4">
+<button class="px-6 py-2 rounded-full font-headline font-bold text-sm uppercase tracking-wide border border-white/20 text-white hover:bg-white/10 transition-colors scale-95 active:opacity-80 transition-transform">Explore Data</button>
+<button class="px-6 py-2 rounded-full font-headline font-bold text-sm uppercase tracking-wide bg-[#6C63FF] text-white hover:bg-[#5a52d6] shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all scale-95 active:opacity-80 transition-transform">Launch Pipeline</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow pt-32 px-8 pb-8 max-w-[1600px] mx-auto w-full flex flex-col xl:flex-row gap-8 relative z-10">
+<!-- Left/Center Canvas: Pipeline & Details -->
+<div class="flex-1 flex flex-col gap-8 min-w-0">
+<!-- Section Header -->
+<div>
+<h1 class="font-headline text-3xl font-bold text-white mb-2 flex items-center">
+<span class="material-symbols-outlined text-[#6C63FF] mr-3" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+                    Mission Pipeline Control
+                </h1>
+<p class="font-body text-white/50 text-sm">Real-time telemetry and processing flow for Shackleton Crater survey.</p>
+</div>
+<!-- Pipeline Flow (Scrollable) -->
+<div class="glass-panel rounded-2xl p-6 overflow-x-auto relative">
+<div class="flex items-center min-w-max py-4 px-2 space-x-4">
+<!-- Node 1: Ingestion -->
+<div class="w-48 glass-panel rounded-xl p-4 flex flex-col items-center justify-center text-center relative opacity-0 animate-staggered-fade node-1">
+<div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-[#00D4AA]">satellite_alt</span>
+</div>
+<h3 class="font-headline font-semibold text-sm mb-1">Ingestion</h3>
+<p class="text-xs font-mono text-white/50">LRO-Mini-RF</p>
+<div class="mt-3 flex items-center text-[10px] uppercase tracking-wider text-[#00D4AA]">
+<div class="w-2 h-2 rounded-full bg-[#00D4AA] mr-2"></div>
+                            Complete
+                        </div>
+</div>
+<!-- Connection -->
+<div class="w-16 h-px bg-white/20 flowing-line-container">
+<div class="flowing-particle"></div>
+</div>
+<!-- Node 2: Despeckling -->
+<div class="w-48 glass-panel rounded-xl p-4 flex flex-col items-center justify-center text-center relative opacity-0 animate-staggered-fade node-2">
+<div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-[#00D4AA]">blur_on</span>
+</div>
+<h3 class="font-headline font-semibold text-sm mb-1">Despeckling</h3>
+<p class="text-xs font-mono text-white/50">Lee Filter</p>
+<div class="mt-3 flex items-center text-[10px] uppercase tracking-wider text-[#00D4AA]">
+<div class="w-2 h-2 rounded-full bg-[#00D4AA] mr-2"></div>
+                            Complete
+                        </div>
+</div>
+<!-- Connection -->
+<div class="w-16 h-px bg-white/20 flowing-line-container">
+<div class="flowing-particle"></div>
+</div>
+<!-- Decision Node -->
+<div class="w-24 h-24 decision-node glass-panel flex items-center justify-center border-[#00D4AA]/50 border opacity-0 animate-staggered-fade node-3 relative group">
+<span class="font-mono text-[9px] text-[#00D4AA] absolute text-center w-full">SNR &gt; 15</span>
+</div>
+<!-- Connection -->
+<div class="w-16 h-px bg-white/20 flowing-line-container">
+<div class="flowing-particle"></div>
+</div>
+<!-- Node 3: Segmentation (ACTIVE) -->
+<div class="w-56 glass-panel rounded-xl p-4 flex flex-col items-center justify-center text-center relative border border-[#6C63FF] animate-pulse-glow opacity-0 animate-staggered-fade node-4 z-10 bg-primary/10">
+<div class="absolute -top-2 -right-2 w-4 h-4 bg-[#6C63FF] rounded-full animate-ping"></div>
+<div class="w-14 h-14 rounded-full bg-[#6C63FF]/20 flex items-center justify-center mb-3 border border-[#6C63FF]/50">
+<span class="material-symbols-outlined text-[#6C63FF] animate-spin-slow">grid_view</span>
+</div>
+<h3 class="font-headline font-bold text-base mb-1 text-white">Segmentation</h3>
+<p class="text-xs font-mono text-[#6C63FF]">U-Net v4 (Ice)</p>
+<div class="w-full bg-white/10 rounded-full h-1.5 mt-4 overflow-hidden">
+<div class="bg-[#6C63FF] h-1.5 rounded-full" style="width: 67%"></div>
+</div>
+<div class="mt-2 flex justify-between w-full text-[10px] uppercase tracking-wider text-white/70">
+<span>Processing</span>
+<span class="text-[#6C63FF] font-bold">67%</span>
+</div>
+</div>
+<!-- Connection (Dimmed) -->
+<div class="w-16 h-px bg-white/10 relative">
+<div class="absolute top-1/2 left-0 w-1/2 h-px bg-gradient-to-r from-[#6C63FF] to-transparent transform -translate-y-1/2"></div>
+</div>
+<!-- Node 4: Pathfinding (PENDING) -->
+<div class="w-48 glass-panel rounded-xl p-4 flex flex-col items-center justify-center text-center relative opacity-0 animate-staggered-fade node-5 border border-white/5 bg-white/5">
+<div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-white/30">route</span>
+</div>
+<h3 class="font-headline font-semibold text-sm mb-1 text-white/50">Pathfinding</h3>
+<p class="text-xs font-mono text-white/30">A* Rover Nav</p>
+<div class="mt-3 flex items-center text-[10px] uppercase tracking-wider text-white/30">
+<div class="w-2 h-2 rounded-full bg-white/20 mr-2 border border-white/30"></div>
+                            Pending Input
+                        </div>
+</div>
+</div>
+</div>
+<!-- Active Detail (Bottom Half) -->
+<div class="glass-panel rounded-2xl flex flex-col md:flex-row flex-1 min-h-[400px] overflow-hidden">
+<!-- Left: Terminal Log -->
+<div class="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-white/10 p-6 flex flex-col bg-[#0B0D1A]/60">
+<div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+<h3 class="font-headline font-semibold text-sm uppercase tracking-widest text-[#6C63FF] flex items-center">
+<span class="material-symbols-outlined text-sm mr-2">terminal</span>
+                            Process Output
+                        </h3>
+<span class="font-mono text-xs text-white/40">PID: 8492</span>
+</div>
+<div class="flex-1 font-mono text-[11px] leading-relaxed text-[#00D4AA] overflow-y-auto pr-2" id="terminal-content">
+<div class="text-white/50 mb-2">&gt; INITIALIZING SEGMENTATION MODULE [U-Net v4]</div>
+<div class="mb-1">[10:42:01] Loading weights... OK</div>
+<div class="mb-1">[10:42:03] Allocating GPU memory (VRAM: 8.4GB)... OK</div>
+<div class="mb-1">[10:42:05] Ingesting despeckled tile (1024x1024)... OK</div>
+<div class="mb-1">[10:42:08] Commencing inference pass 1/3...</div>
+<div class="mb-1 text-[#FF6B9D]">[10:42:15] WARN: High CPR anomaly detected at coords x:420, y:890</div>
+<div class="mb-1">[10:42:18] Recalibrating threshold bounds... OK</div>
+<div class="mb-1">[10:42:25] Commencing inference pass 2/3...</div>
+<div class="mb-1">[10:42:31] Identifying primary ice deposit clusters...</div>
+<div class="mb-1 mt-4 text-white terminal-text">
+                            &gt; Analyzing pixel density gradients... <span class="type-cursor"></span>
+</div>
+</div>
+<div class="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+<div class="text-center">
+<div class="font-mono text-xs text-white/40 mb-1">ELAPSED</div>
+<div class="font-mono text-sm text-white">00:14:23</div>
+</div>
+<div class="text-center border-l border-white/10">
+<div class="font-mono text-xs text-white/40 mb-1">GPU UTIL</div>
+<div class="font-mono text-sm text-[#FF6B9D]">94%</div>
+</div>
+<div class="text-center border-l border-white/10">
+<div class="font-mono text-xs text-white/40 mb-1">MEM</div>
+<div class="font-mono text-sm text-white">12.8GB</div>
+</div>
+</div>
+</div>
+<!-- Right: Map/Chart Visualization -->
+<div class="w-full md:w-1/2 p-6 relative flex flex-col bg-black/20">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline font-semibold text-sm uppercase tracking-widest text-white flex items-center">
+<span class="material-symbols-outlined text-sm mr-2 text-[#6C63FF]">layers</span>
+                            Active Layer: Ice Prob
+                        </h3>
+<div class="flex space-x-2">
+<button class="w-6 h-6 rounded bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-[14px]">zoom_in</span>
+</button>
+<button class="w-6 h-6 rounded bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-[14px]">zoom_out</span>
+</button>
+</div>
+</div>
+<!-- Image Placeholder for Map -->
+<div class="flex-1 relative rounded-xl overflow-hidden border border-white/10 group">
+<div class="bg-cover bg-center w-full h-full absolute inset-0 mix-blend-screen opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="A highly detailed, top-down satellite map of a lunar crater interior (Shackleton). The map is styled with a dark, deep space aesthetic (#0B0D1A background). Overlaid on the monochrome lunar terrain are false-color heat map regions highlighting potential ice deposits in glowing electric violet (#6C63FF) and lunar teal (#00D4AA). The visual style resembles an advanced, futuristic mission control targeting interface with grid lines and subtle digital noise." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD8V7ckm-uMnmt8eGLIa1sMWazGYciLptawNHuW2S6gu5l51wFeTYSSbLla5CFz_N-zDJEXNGY-gFZBdAuX3cj5l7AOQBb56045CMuRmgmJvySBI_n6Lxv5LqmQ6rYKx3VzKoXtVkKDkA6lOgBVZCrTusEpQ-EFcuGC3L-bEwr19i5i8rO8k9PvJ4QE_OvqM7ixQEiAgQZAMYIq67qXz0hAacEjasSwAEzB4h5Hgfa6i-CVaxmeqmqrCDvKOXcWvfNM0NmbsK3VvTE')"></div>
+<!-- Overlay UI elements on map -->
+<div class="absolute inset-0 bg-[linear-gradient(rgba(108,99,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(108,99,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+<!-- Scanning line effect -->
+<div class="absolute top-0 left-0 w-full h-1 bg-[#6C63FF]/50 shadow-[0_0_10px_#6C63FF] animate-[flowLine_3s_linear_infinite_alternate]"></div>
+<!-- Reticle -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-[#00D4AA]/30 rounded-full flex items-center justify-center">
+<div class="w-2 h-2 bg-[#00D4AA] rounded-full animate-ping"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: Mission Parameters -->
+<aside class="w-full xl:w-80 flex-shrink-0 opacity-0 animate-slide-in-right" style="animation-delay: 0.6s;">
+<div class="glass-panel rounded-2xl p-6 sticky top-32">
+<div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+<h2 class="font-headline text-lg font-bold text-white flex items-center">
+<span class="material-symbols-outlined mr-2 text-white/70">tune</span>
+                        Parameters
+                    </h2>
+<span class="bg-[#00D4AA]/20 text-[#00D4AA] text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Active</span>
+</div>
+<div class="space-y-6">
+<!-- Param 1 -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="font-label text-xs uppercase tracking-wider text-white/50">Target Area</label>
+<span class="font-mono text-xs text-white">Shackleton</span>
+</div>
+<div class="glass-panel rounded-lg p-3 bg-black/20 flex items-center border-l-2 border-[#6C63FF]">
+<span class="material-symbols-outlined text-[#6C63FF] mr-3">my_location</span>
+<div class="font-mono text-xs text-white/70">89.9°S 0.0°E</div>
+</div>
+</div>
+<!-- Param 2 -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="font-label text-xs uppercase tracking-wider text-white/50">Min CPR Threshold</label>
+<span class="font-mono text-xs text-[#00D4AA]">0.85</span>
+</div>
+<input class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00D4AA]" max="100" min="0" type="range" value="85"/>
+</div>
+<!-- Param 3 -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="font-label text-xs uppercase tracking-wider text-white/50">Max Slope (Rover)</label>
+<span class="font-mono text-xs text-white">15°</span>
+</div>
+<input class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white" max="30" min="0" type="range" value="15"/>
+</div>
+<!-- Param 4 -->
+<div class="pt-4 border-t border-white/10">
+<div class="flex justify-between items-center mb-3">
+<label class="font-label text-xs uppercase tracking-wider text-white/50">Rover Battery Sim</label>
+<span class="material-symbols-outlined text-sm text-[#FF6B9D]">battery_charging_full</span>
+</div>
+<div class="flex items-center space-x-2">
+<div class="flex-1 bg-white/5 h-8 rounded border border-white/10 flex items-center px-3 justify-between">
+<span class="font-mono text-xs text-white/40">CAP</span>
+<span class="font-mono text-sm text-white">2.4 kWh</span>
+</div>
+</div>
+</div>
+<!-- Action -->
+<div class="pt-6">
+<button class="w-full py-3 rounded-xl font-headline font-bold text-sm uppercase tracking-wide border border-white/20 text-white/70 hover:text-white hover:bg-white/5 hover:border-[#6C63FF]/50 transition-all flex items-center justify-center">
+<span class="material-symbols-outlined mr-2 text-[18px]">save</span>
+                            Save Config
+                        </button>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer Component -->
+<footer class="w-full bottom-0 py-8 px-12 flex justify-between items-center bg-[#0B0D1A]/80 backdrop-blur-md border-t border-white/5 mt-auto relative z-10">
+<div class="font-headline text-xl font-bold text-white opacity-100 hover:opacity-80 transition-opacity">
+            LunarSight
+        </div>
+<div class="flex space-x-6">
+<a class="font-body text-sm text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Privacy Policy</a>
+<a class="font-body text-sm text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Terms of Service</a>
+<a class="font-body text-sm text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Mission Logs</a>
+</div>
+<div class="font-body text-sm text-white/50">
+            © 2024 LunarSight Mission Control. All rights reserved.
+        </div>
+</footer>
+<script>
+        // Simple typewriter effect for terminal
+        document.addEventListener('DOMContentLoaded', () => {
+            const terminalLines = [
+                "> Analyzing pixel density gradients... ",
+                "  > Found cluster at (234, 512)",
+                "  > Probability score: 0.89",
+                "> Segmenting region boundary... ",
+                "  > Contour mapping complete."
+            ];
+            
+            const terminalContainer = document.getElementById('terminal-content');
+            let lineIndex = 0;
+            
+            function simulateTyping() {
+                if (lineIndex >= terminalLines.length) return;
+                
+                // Remove cursor from previous line if it exists
+                const cursors = document.querySelectorAll('.type-cursor');
+                cursors.forEach(c => c.remove());
+                
+                // Create new line
+                const newLine = document.createElement('div');
+                newLine.className = 'mb-1 text-white terminal-text';
+                terminalContainer.appendChild(newLine);
+                
+                let charIndex = 0;
+                const text = terminalLines[lineIndex];
+                
+                const cursor = document.createElement('span');
+                cursor.className = 'type-cursor';
+                
+                const typingInterval = setInterval(() => {
+                    newLine.textContent = text.substring(0, charIndex);
+                    newLine.appendChild(cursor);
+                    
+                    charIndex++;
+                    
+                    if (charIndex > text.length) {
+                        clearInterval(typingInterval);
+                        lineIndex++;
+                        setTimeout(simulateTyping, 1000);
+                    }
+                    
+                    // Auto scroll to bottom
+                    terminalContainer.scrollTop = terminalContainer.scrollHeight;
+                }, 50);
+            }
+            
+            // Start after a slight delay
+            setTimeout(() => {
+                // Remove the static typing line before starting dynamic one
+                const staticLine = document.querySelector('.terminal-text');
+                if(staticLine) staticLine.remove();
+                simulateTyping();
+            }, 2000);
+        });
+    </script>
+</body></html>
