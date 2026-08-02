@@ -1,0 +1,91 @@
+# ============================================================
+# LunarSight — Mission Configuration
+# ============================================================
+# Change these values to target any crater or rover platform.
+# All downstream agents read from this single config file.
+# ============================================================
+
+target:
+  crater_name: "Faustini"
+  description: "Permanently shadowed crater at the lunar South Pole"
+  bbox:
+    lat_min: -88.0
+    lat_max: -86.5
+    lon_min: 76.0
+    lon_max: 78.0
+  # ---- Alternative craters (uncomment to use) ----
+  # crater_name: "Shoemaker"
+  # bbox: { lat_min: -89.0, lat_max: -87.5, lon_min: 40.0, lon_max: 42.0 }
+  #
+  # crater_name: "Haworth"
+  # bbox: { lat_min: -88.0, lat_max: -86.5, lon_min: -5.0, lon_max: 0.0 }
+  #
+  # crater_name: "Shackleton"
+  # bbox: { lat_min: -90.0, lat_max: -89.0, lon_min: 120.0, lon_max: 140.0 }
+
+# ---- Coordinate Reference System ----
+crs:
+  projection: "polar_stereographic"
+  body: "Moon"
+  radius_km: 1737.4
+  standard_parallel: -90.0   # South pole
+
+# ---- Polarimetric Ice Detection Thresholds ----
+# Based on Sinha et al. (2026) for doubly shadowed crater ice
+thresholds:
+  ice_cpr_min: 1.0           # CPR > 1 indicates volume scattering
+  ice_dop_max: 0.13          # DOP < 0.13 filters out rocky dihedral returns
+  ice_lband_cpr_min: 1.0     # L-band CPR threshold
+  ice_sband_cpr_min: 1.0     # S-band CPR threshold
+  rock_m_min: 0.7            # High m → surface/double-bounce (rock)
+  confidence_initial: 0.5    # Initial confidence threshold for Agent 4
+  confidence_step_down: 0.1  # How much to lower on path failure retry
+
+# ---- Rover Parameters ----
+# Defaults based on Pragyan-class rover (ISRO Chandrayaan-3)
+# Override with your specific rover specs
+rover:
+  name: "Generic Pragyan-class"
+  mass_kg: 27.0
+  wheel_count: 6
+  wheel_radius_m: 0.105
+  wheel_width_m: 0.14
+  max_slope_deg: 10.0
+  battery_capacity_wh: 50.0
+  power_draw_nominal_w: 15.0
+  power_draw_max_w: 50.0
+  thermal_min_temp_k: 173.0    # Minimum operating temperature (K)
+  thermal_max_temp_k: 323.0    # Maximum operating temperature (K)
+  max_velocity_ms: 0.01        # ~1 cm/s
+  suspension_type: "rocker_bogie"  # "rocker_bogie" or "active"
+
+# ---- Lunar Regolith Properties ----
+# From Apollo soil mechanics data
+regolith:
+  cohesion_pa: 170.0               # c (Pascals) — soil cohesion
+  friction_angle_deg: 33.0         # φ — internal friction angle
+  shear_deformation_modulus_m: 0.018  # K — shear deformation modulus
+  bulk_density_kgm3: 1500.0        # ρ — bulk density
+  gravity_ms2: 1.62                # lunar gravity
+
+# ---- Illumination Model ----
+illumination:
+  synodic_period_hours: 708.0      # Lunar synodic period
+  shadow_model: "simple_horizon"   # "simple_horizon" or "external"
+  external_model_path: null        # Path to external illumination model if used
+
+# ---- Orchestrator Settings ----
+orchestrator:
+  max_retries: 3                   # Max cyclical retries (Agent 5 → Agent 4)
+  timeout_per_agent_seconds: 3600  # 1 hour max per agent
+  log_level: "INFO"
+
+# ---- Data Paths ----
+# These get populated by Agent 1 at runtime, but can be pre-set
+# if data is already downloaded
+data:
+  dfsar_l_band_path: null
+  dfsar_s_band_path: null
+  lola_dem_path: null
+  output_dir: "./output"
+  checkpoint_dir: "./checkpoints"

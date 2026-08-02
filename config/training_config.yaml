@@ -1,0 +1,87 @@
+# ============================================================
+# LunarSight — Training Configuration
+# ============================================================
+# Hyperparameters optimized for Google Colab Free Tier (T4 GPU)
+# T4: 16 GB VRAM, 12-hour session limit
+# ============================================================
+
+# ---- Agent 2: CV-CNN Despeckling ----
+despeckling:
+  # Architecture
+  encoder_channels: [4, 32, 64, 128, 256]   # Complex channel progression
+  decoder_channels: [256, 128, 64, 32, 4]
+  use_skip_connections: true
+  activation: "complex_relu"                  # "complex_relu" or "complex_sigmoid"
+  dropout_rate: 0.1
+
+  # Data
+  patch_size: 128              # 128x128 pixel patches
+  patch_stride: 64             # 50% overlap
+  train_split: 0.8
+  val_split: 0.2
+
+  # Training — Colab Free optimized
+  batch_size: 8                # Fits in T4 16GB with complex64
+  epochs: 80
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine_annealing"
+  scheduler_t_max: 80          # Same as epochs
+
+  # Loss
+  loss_frobenius_weight: 1.0   # α
+  loss_phase_weight: 0.5       # β
+  early_stopping_patience: 15
+
+  # Checkpointing — critical for Colab Free
+  checkpoint_every_n_epochs: 5
+  save_best_model: true
+  checkpoint_dir: "/content/drive/MyDrive/LunarSight/checkpoints/agent2"
+
+# ---- Agent 4: U-Net Segmentation ----
+segmentation:
+  # Architecture
+  encoder_name: "efficientnet-b3"   # SMP encoder
+  encoder_weights: "imagenet"
+  decoder_channels: [256, 128, 64, 32, 16]
+  num_classes: 2                     # ice (1) vs rock (0)
+
+  # Data
+  patch_size: 256              # 256x256 pixel patches
+  patch_stride: 128            # 50% overlap
+  train_split: 0.8
+  val_split: 0.2
+
+  # Training — Colab Free optimized
+  batch_size: 4                # Fits in T4 16GB with multi-channel input
+  epochs: 80
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine_annealing"
+  scheduler_t_max: 80
+
+  # Loss
+  loss_bce_weight: 1.0         # α
+  loss_dice_weight: 0.5        # β
+  class_weights: [1.0, 3.0]    # Upweight ice (minority class in seeds)
+  early_stopping_patience: 15
+
+  # Self-training
+  self_training_rounds: 3
+  self_training_epochs: [20, 40, 60]   # Expand labels at these epochs
+  self_training_confidence: 0.95       # Only add predictions above this
+
+  # Checkpointing
+  checkpoint_every_n_epochs: 5
+  save_best_model: true
+  checkpoint_dir: "/content/drive/MyDrive/LunarSight/checkpoints/agent4"
+
+# ---- General ----
+general:
+  seed: 42
+  num_workers: 2               # Colab Free has limited CPU
+  pin_memory: true
+  mixed_precision: false       # Complex ops don't fully support AMP yet
+  device: "auto"               # "auto", "cuda", or "cpu"
