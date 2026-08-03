@@ -3,31 +3,48 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LunarSight — Lunar Ice Detection & Pathfinding</title>
-    <meta name="description" content="Multi-Agent AI system for detecting water ice on the Moon's south pole and planning rover traverse paths using Chandrayaan-2 DFSAR data." />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700;900&family=Space+Mono&display=swap" rel="stylesheet" />
+    <title>LunarSight — Autonomous Lunar Ice Telemetry & Pathfinding</title>
+    <meta name="description" content="Mission-grade multi-agent AI system for detecting polar water ice on the Moon's South Pole using Chandrayaan-2 DFSAR radar polarimetry." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg: #0B0D1A;
-            --primary: #6C63FF;
-            --secondary: #00D4AA;
-            --accent: #FF6B9D;
-            --surface: rgba(255, 255, 255, 0.05);
+            --bg: #000000;
+            --surface-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.12);
+            --border-glass-active: rgba(255, 255, 255, 0.4);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --accent-glow: rgba(255, 255, 255, 0.25);
         }
 
         body {
             background: var(--bg);
-            color: white;
-            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
+            user-select: none;
         }
 
-        /* === Fixed Navigation === */
+        /* === Interactive Galaxy & Starfield Canvas === */
+        #galaxy-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* === Mission Control Navigation Header === */
         .nav-container {
             position: fixed;
             top: 0;
@@ -44,108 +61,149 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 95%;
-            max-width: 1400px;
-            padding: 12px 32px;
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 9999px;
-            box-shadow: 0 0 40px rgba(108, 99, 255, 0.15);
+            width: 96%;
+            max-width: 1560px;
+            padding: 10px 24px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.2);
             pointer-events: all;
-            transition: all 0.5s ease;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .navbar:hover {
-            box-shadow: 0 0 60px rgba(108, 99, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.95), 0 0 20px rgba(255, 255, 255, 0.08);
+        }
+
+        .nav-brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .logo-symbol {
+            width: 28px;
+            height: 28px;
+            border: 1.5px solid #FFFFFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+            animation: symbolPulse 4s ease-in-out infinite;
+        }
+
+        .logo-symbol::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #FFFFFF;
+        }
+
+        @keyframes symbolPulse {
+            0%, 100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 22px rgba(255, 255, 255, 0.6); }
         }
 
         .nav-brand {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #6C63FF, #FF6B9D);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            cursor: pointer;
-            transition: transform 0.3s ease;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #FFFFFF;
+            text-transform: uppercase;
         }
 
-        .nav-brand:hover {
-            transform: scale(1.05);
-        }
-
-        .nav-brand .moon-icon {
-            display: inline-block;
-            margin-right: 6px;
-            animation: moonPulse 3s ease-in-out infinite;
-        }
-
-        @keyframes moonPulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.1); }
+        .nav-brand .version-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-left: 8px;
+            vertical-align: middle;
+            letter-spacing: 0.1em;
         }
 
         .nav-links {
             display: flex;
-            gap: 8px;
+            gap: 4px;
             list-style: none;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .nav-link {
-            padding: 8px 20px;
+            padding: 6px 16px;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.12em;
+            color: var(--text-secondary);
             text-decoration: none;
-            border-radius: 9999px;
-            transition: all 0.3s ease;
+            border-radius: 6px;
+            transition: all 0.25s ease;
             cursor: pointer;
             position: relative;
-            overflow: hidden;
-        }
-
-        .nav-link::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--primary);
-            transition: all 0.3s ease;
-            transform: translateX(-50%);
-            border-radius: 2px;
         }
 
         .nav-link:hover {
-            color: white;
-            text-shadow: 0 0 20px rgba(108, 99, 255, 0.5);
-        }
-
-        .nav-link:hover::before {
-            width: 60%;
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .nav-link.active {
-            color: white;
-            background: rgba(108, 99, 255, 0.2);
-            box-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
+            color: #000000;
+            background: #FFFFFF;
+            font-weight: 700;
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
         }
 
-        .nav-link.active::before {
-            width: 60%;
-            box-shadow: 0 0 10px var(--primary);
+        /* Telemetry Ticker */
+        .telemetry-ticker {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
         }
 
-        /* === Page Frame Container === */
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ticker-dot {
+            width: 6px;
+            height: 6px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #FFFFFF;
+            animation: blinkDot 1.5s infinite;
+        }
+
+        @keyframes blinkDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        /* === Page Frames Container === */
         .page-frame {
             position: fixed;
             top: 0;
@@ -154,27 +212,27 @@
             height: 100vh;
             border: none;
             opacity: 0;
-            transform: translateY(20px) scale(0.98);
-            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform: scale(0.985);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: none;
             z-index: 1;
         }
 
         .page-frame.active {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: scale(1);
             pointer-events: all;
             z-index: 5;
         }
 
         .page-frame.exiting {
             opacity: 0;
-            transform: translateY(-20px) scale(0.98);
+            transform: scale(1.015);
             pointer-events: none;
             z-index: 2;
         }
 
-        /* === Loading Indicator === */
+        /* === Telemetry HUD Loader === */
         .loader {
             position: fixed;
             top: 50%;
@@ -184,105 +242,121 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
             opacity: 0;
             transition: opacity 0.3s ease;
             pointer-events: none;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(16px);
+            padding: 24px 36px;
+            border: 1px solid var(--border-glass-active);
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
         }
 
         .loader.visible {
             opacity: 1;
         }
 
-        .loader-ring {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(108, 99, 255, 0.2);
-            border-top: 3px solid var(--primary);
+        .loader-radar {
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 2px solid #FFFFFF;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: radarSpin 0.8s linear infinite;
         }
 
-        @keyframes spin {
+        @keyframes radarSpin {
             to { transform: rotate(360deg); }
         }
 
         .loader-text {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 0.2em;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: #FFFFFF;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
         }
 
-        /* === Page Transition Particles === */
-        .transition-particle {
-            position: fixed;
-            width: 4px;
-            height: 4px;
-            background: var(--primary);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0;
-        }
-
-        /* === Mobile Menu === */
         .mobile-toggle {
             display: none;
             background: none;
             border: none;
-            color: rgba(255, 255, 255, 0.7);
+            color: #FFFFFF;
             cursor: pointer;
-            padding: 8px;
+            padding: 6px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+            .telemetry-ticker { display: none; }
             .nav-links { display: none; }
             .mobile-toggle { display: block; }
             .nav-links.open {
                 display: flex;
                 flex-direction: column;
                 position: absolute;
-                top: 70px;
+                top: 60px;
                 left: 50%;
                 transform: translateX(-50%);
-                background: rgba(11, 13, 26, 0.95);
+                background: rgba(0, 0, 0, 0.95);
                 backdrop-filter: blur(24px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 16px;
-                padding: 16px;
-                width: 90%;
-                gap: 4px;
+                border: 1px solid var(--border-glass-active);
+                border-radius: 12px;
+                padding: 12px;
+                width: 92%;
+                gap: 6px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+
+    <!-- Galaxy Particle Canvas -->
+    <canvas id="galaxy-canvas"></canvas>
+
+    <!-- Navigation Header -->
     <div class="nav-container">
         <nav class="navbar" id="main-nav">
-            <div class="nav-brand" onclick="navigateTo('hero')">
-                <span class="moon-icon">🌙</span>LunarSight
+            <div class="nav-brand-group" onclick="navigateTo('hero')">
+                <div class="logo-symbol"></div>
+                <div class="nav-brand">
+                    LUNARSIGHT<span class="version-badge">v2.4 DFSAR</span>
+                </div>
             </div>
+
             <ul class="nav-links" id="nav-links">
-                <li><a class="nav-link active" data-page="hero" onclick="navigateTo('hero')">Home</a></li>
-                <li><a class="nav-link" data-page="pipeline" onclick="navigateTo('pipeline')">Pipeline</a></li>
-                <li><a class="nav-link" data-page="agents" onclick="navigateTo('agents')">Agents</a></li>
-                <li><a class="nav-link" data-page="data-explorer" onclick="navigateTo('data-explorer')">Data Explorer</a></li>
-                <li><a class="nav-link" data-page="pathfinder" onclick="navigateTo('pathfinder')">Pathfinder</a></li>
-                <li><a class="nav-link" data-page="about" onclick="navigateTo('about')">About</a></li>
+                <li><a class="nav-link active" data-page="hero" onclick="navigateTo('hero')">MISSION</a></li>
+                <li><a class="nav-link" data-page="pipeline" onclick="navigateTo('pipeline')">PIPELINE</a></li>
+                <li><a class="nav-link" data-page="agents" onclick="navigateTo('agents')">AGENTS</a></li>
+                <li><a class="nav-link" data-page="data-explorer" onclick="navigateTo('data-explorer')">EXPLORER</a></li>
+                <li><a class="nav-link" data-page="pathfinder" onclick="navigateTo('pathfinder')">PATHFINDER</a></li>
+                <li><a class="nav-link" data-page="about" onclick="navigateTo('about')">SPECS</a></li>
             </ul>
+
+            <div class="telemetry-ticker">
+                <div class="ticker-item">
+                    <span class="ticker-dot"></span>
+                    <span>DFSAR L-BAND</span>
+                </div>
+                <div class="ticker-item">
+                    <span>CPR > 1.2</span>
+                </div>
+                <div class="ticker-item" style="color:#FFFFFF; font-weight:700;">
+                    <span>SYS NOMINAL</span>
+                </div>
+            </div>
+
             <button class="mobile-toggle" onclick="toggleMobile()">
-                <span class="material-symbols-outlined" style="font-size:28px">menu</span>
+                <span class="material-symbols-outlined" style="font-size:24px">menu</span>
             </button>
         </nav>
     </div>
 
-    <!-- Loading Indicator -->
+    <!-- HUD Loader -->
     <div class="loader" id="loader">
-        <div class="loader-ring"></div>
-        <div class="loader-text">Loading mission data...</div>
+        <div class="loader-radar"></div>
+        <div class="loader-text">SYNCHRONIZING TELEMETRY...</div>
     </div>
 
     <!-- Page Frames -->
@@ -294,6 +368,122 @@
     <iframe class="page-frame" id="frame-about" data-src="pages/about.html"></iframe>
 
     <script>
+        // === Galaxy Background Canvas ===
+        (function initGalaxyCanvas() {
+            const canvas = document.getElementById('galaxy-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let mouseX = 0, mouseY = 0;
+            let targetMouseX = 0, targetMouseY = 0;
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Generate high-density galaxy stars
+            const STAR_COUNT = 380;
+            const stars = [];
+            for (let i = 0; i < STAR_COUNT; i++) {
+                stars.push({
+                    x: (Math.random() - 0.5) * width * 1.5,
+                    y: (Math.random() - 0.5) * height * 1.5,
+                    z: Math.random() * width,
+                    size: 0.5 + Math.random() * 1.8,
+                    alpha: 0.2 + Math.random() * 0.8,
+                    twinkleSpeed: 0.005 + Math.random() * 0.02
+                });
+            }
+
+            // Cosmic Dust Nebulae Particles
+            const DUST_COUNT = 45;
+            const dust = [];
+            for (let i = 0; i < DUST_COUNT; i++) {
+                dust.push({
+                    x: (Math.random() - 0.5) * width,
+                    y: (Math.random() - 0.5) * height,
+                    radius: 80 + Math.random() * 220,
+                    alpha: 0.015 + Math.random() * 0.035,
+                    vx: (Math.random() - 0.5) * 0.15,
+                    vy: (Math.random() - 0.5) * 0.15
+                });
+            }
+
+            window.addEventListener('mousemove', (e) => {
+                targetMouseX = (e.clientX - width / 2) * 0.05;
+                targetMouseY = (e.clientY - height / 2) * 0.05;
+            });
+
+            function render() {
+                mouseX += (targetMouseX - mouseX) * 0.05;
+                mouseY += (targetMouseY - mouseY) * 0.05;
+
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, width, height);
+
+                const cx = width / 2 + mouseX;
+                const cy = height / 2 + mouseY;
+
+                // Render Nebula Dust
+                for (let d of dust) {
+                    d.x += d.vx;
+                    d.y += d.vy;
+                    if (d.x < -width/2) d.x = width/2;
+                    if (d.x > width/2) d.x = -width/2;
+                    if (d.y < -height/2) d.y = height/2;
+                    if (d.y > height/2) d.y = -height/2;
+
+                    const grad = ctx.createRadialGradient(cx + d.x, cy + d.y, 0, cx + d.x, cy + d.y, d.radius);
+                    grad.addColorStop(0, `rgba(255, 255, 255, ${d.alpha})`);
+                    grad.addColorStop(0.5, `rgba(180, 190, 210, ${d.alpha * 0.4})`);
+                    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx + d.x, cy + d.y, d.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Render Stars with Parallax Depth
+                for (let s of stars) {
+                    s.z -= 0.2;
+                    if (s.z <= 0) {
+                        s.z = width;
+                        s.x = (Math.random() - 0.5) * width * 1.5;
+                        s.y = (Math.random() - 0.5) * height * 1.5;
+                    }
+
+                    const k = 400 / s.z;
+                    const px = s.x * k + cx;
+                    const py = s.y * k + cy;
+
+                    if (px >= 0 && px < width && py >= 0 && py < height) {
+                        s.alpha += Math.sin(Date.now() * s.twinkleSpeed) * 0.01;
+                        const currentAlpha = Math.max(0.1, Math.min(1, s.alpha));
+                        const currentSize = Math.max(0.4, s.size * k * 0.8);
+
+                        ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, currentSize, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Star Glow for larger stars
+                        if (currentSize > 1.2) {
+                            ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha * 0.25})`;
+                            ctx.beginPath();
+                            ctx.arc(px, py, currentSize * 2.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
+
+                requestAnimationFrame(render);
+            }
+            render();
+        })();
+
+        // === Navigation Logic ===
         let currentPage = 'hero';
         const loadedPages = new Set(['hero']);
 
@@ -306,19 +496,13 @@
 
             if (!nextFrame) return;
 
-            // Update nav
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.dataset.page === page);
             });
 
-            // Spawn particles
-            spawnTransitionParticles();
-
-            // Exit current
             currentFrame.classList.remove('active');
             currentFrame.classList.add('exiting');
 
-            // Lazy-load the page if not yet loaded
             if (!loadedPages.has(page)) {
                 loader.classList.add('visible');
                 const dataSrc = nextFrame.getAttribute('data-src');
@@ -332,15 +516,13 @@
                     showPage();
                 }, { once: true });
             } else {
-                setTimeout(showPage, 100);
+                setTimeout(showPage, 80);
             }
 
             function showPage() {
                 currentFrame.classList.remove('exiting');
                 nextFrame.classList.add('active');
                 currentPage = page;
-
-                // Close mobile menu
                 document.getElementById('nav-links').classList.remove('open');
             }
         }
@@ -349,35 +531,6 @@
             document.getElementById('nav-links').classList.toggle('open');
         }
 
-        function spawnTransitionParticles() {
-            const count = 12;
-            for (let i = 0; i < count; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'transition-particle';
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                const colors = ['#6C63FF', '#00D4AA', '#FF6B9D'];
-                particle.style.left = x + 'px';
-                particle.style.top = y + 'px';
-                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-                particle.style.width = (2 + Math.random() * 4) + 'px';
-                particle.style.height = particle.style.width;
-                document.body.appendChild(particle);
-
-                // Animate
-                particle.animate([
-                    { opacity: 0, transform: 'scale(0) translateY(0)' },
-                    { opacity: 1, transform: 'scale(1.5) translateY(-30px)' },
-                    { opacity: 0, transform: 'scale(0) translateY(-60px)' }
-                ], {
-                    duration: 600 + Math.random() * 400,
-                    easing: 'ease-out',
-                    delay: Math.random() * 200
-                }).onfinish = () => particle.remove();
-            }
-        }
-
-        // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             const pages = ['hero', 'pipeline', 'agents', 'data-explorer', 'pathfinder', 'about'];
             const idx = pages.indexOf(currentPage);

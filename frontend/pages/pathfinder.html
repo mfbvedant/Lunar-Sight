@@ -1,362 +1,372 @@
 <!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LunarSight — Rover Traverse Pathfinder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>LunarSight | Pathfinder Mission Control</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Space+Mono&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              primary: "#6C63FF",
-              secondary: "#00D4AA",
-              accent: "#FF6B9D",
-              background: "#0B0D1A"
-            },
-            borderRadius: {
-              "DEFAULT": "0.5rem",
-              "lg": "1rem",
-              "xl": "1.5rem",
-              "full": "9999px"
-            },
-            fontFamily: {
-              headline: ["Space Grotesk"],
-              display: ["Space Grotesk"],
-              body: ["Inter"],
-              label: ["Public Sans"],
-              mono: ["Space Mono"]
-            }
-          },
-        },
-      }
-    </script>
-<style>
+        :root {
+            --bg: #000000;
+            --surface-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.12);
+            --border-glass-active: rgba(255, 255, 255, 0.4);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-muted: rgba(255, 255, 255, 0.4);
+        }
+
         body {
-            background-color: #0B0D1A;
-            color: white;
-            overflow-x: hidden;
+            background: transparent;
+            color: var(--text-primary);
             font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 85px 4% 30px 4%;
+            user-select: none;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 14px;
         }
 
-        .star-field {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .header-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+        }
+
+        .header-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            letter-spacing: 0.08em;
+        }
+
+        .path-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+            height: calc(100vh - 170px);
+        }
+
+        .canvas-container {
+            background: #000000;
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #traverse-canvas {
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(108, 99, 255, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(0, 212, 170, 0.05) 0%, transparent 50%);
         }
 
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.95) translateY(20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+        .hud-tag {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--border-glass-active);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #FFFFFF;
+            letter-spacing: 0.1em;
+            backdrop-filter: blur(16px);
         }
 
-        .animate-card {
-            animation: fadeInScale 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            opacity: 0;
+        .panel-box {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(24px);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
         }
 
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
-        .delay-3 { animation-delay: 0.3s; }
-        .delay-4 { animation-delay: 0.4s; }
-
-        .progress-ring__circle {
-            transition: stroke-dashoffset 0.8s ease-in-out;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
+        .panel-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
         }
 
-        input[type="range"] {
-            -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            border-radius: 999px;
-            height: 4px;
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #6C63FF;
-            box-shadow: 0 0 10px rgba(108, 99, 255, 0.5);
+        .input-lbl {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .range-slider {
+            width: 100%;
+            accent-color: #FFFFFF;
+        }
+
+        .btn-calc {
+            width: 100%;
+            padding: 12px;
+            background: #FFFFFF;
+            color: #000000;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border: 1px solid #FFFFFF;
+            border-radius: 6px;
             cursor: pointer;
+            transition: all 0.25s ease;
+            margin-top: 10px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
+        .btn-calc:hover {
+            background: #E0E0E0;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.02);
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'JetBrains Mono', monospace;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(108, 99, 255, 0.3);
-            border-radius: 10px;
+
+        .stat-val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .stat-lbl {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        @media (max-width: 1024px) {
+            .path-layout { grid-template-columns: 1fr; height: auto; }
         }
     </style>
 </head>
-<body class="bg-background min-h-screen flex flex-col">
-<div class="star-field"></div>
-<!-- TopNavBar -->
-<nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 bg-white/5 backdrop-blur-xl rounded-full mt-4 mx-auto w-[95%] max-w-7xl border border-white/10 shadow-2xl shadow-indigo-500/10">
-<div class="font-headline text-2xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-[#6C63FF] to-[#FF6B9D]">LunarSight</div>
-<div class="hidden md:flex items-center space-gap-8 gap-8">
-<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors" href="#">Pipeline</a>
-<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors" href="#">Agents</a>
-<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors" href="#">Data Explorer</a>
-<a class="font-headline text-lg uppercase tracking-wider font-bold text-[#6C63FF] border-b-2 border-[#6C63FF] pb-1" href="#">Pathfinder</a>
-<a class="font-headline text-lg uppercase tracking-wider font-bold text-white/70 hover:text-white transition-colors" href="#">About</a>
-</div>
-<div class="flex items-center gap-4">
-<button class="hidden lg:block px-6 py-2 rounded-full border border-white/20 text-white font-bold hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 active:opacity-80">Explore Data</button>
-<button class="px-6 py-2 rounded-full bg-[#6C63FF] text-white font-bold hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80">Launch Pipeline</button>
-</div>
-</nav>
-<!-- Main Content -->
-<main class="flex-grow pt-32 pb-12 px-6 max-w-[1600px] mx-auto w-full flex flex-col md:flex-row gap-6">
-<!-- Left Panel: 3D Visualization (60%) -->
-<div class="md:w-3/5 h-[500px] md:h-[calc(100vh-200px)] relative glass-panel rounded-xl overflow-hidden group">
+<body>
 
-<!-- Floating Overlay Label -->
-<div class="absolute top-6 left-6 flex flex-col gap-2 z-10 pointer-events-none">
-<div class="flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10">
-<span class="material-symbols-outlined text-[#6C63FF] animate-pulse">radar</span>
-<span class="font-mono text-xs tracking-widest text-white/80">MISSION PATH: ALPHA-7</span>
-</div>
-<div class="bg-black/40 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 w-fit">
-<span class="font-mono text-[10px] text-secondary">LAT: 89.232° N | LONG: 45.121° E</span>
-</div>
-</div>
-<!-- Interaction Help Overlay -->
-<div class="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-<div class="text-[10px] font-mono text-white/40 uppercase tracking-tighter">Drag to Rotate • Scroll to Zoom</div>
-</div>
-</div>
-<!-- Right Panel: Data Cards (40%) -->
-<div class="md:w-2/5 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 max-h-[calc(100vh-200px)]">
-<!-- Card 1: Rover Configuration -->
-<section class="animate-card delay-1 glass-panel p-6 rounded-xl space-y-6">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">settings_input_component</span>
-<h2 class="font-headline font-bold text-lg uppercase tracking-wide">Rover Configuration</h2>
-</div>
-<div class="grid gap-6">
-<div class="space-y-2">
-<div class="flex justify-between font-mono text-xs text-white/60">
-<span>Mass</span>
-<span class="text-white">27kg</span>
-</div>
-<input class="w-full" max="100" min="10" type="range" value="27"/>
-</div>
-<div class="space-y-2">
-<div class="flex justify-between font-mono text-xs text-white/60">
-<span>Max Slope</span>
-<span class="text-white">10°</span>
-</div>
-<input class="w-full" max="45" min="0" type="range" value="10"/>
-</div>
-<div class="space-y-2">
-<div class="flex justify-between font-mono text-xs text-white/60">
-<span>Battery</span>
-<span class="text-white">50Wh</span>
-</div>
-<input class="w-full" max="200" min="10" type="range" value="50"/>
-</div>
-<div class="space-y-2">
-<div class="flex justify-between font-mono text-xs text-white/60">
-<span>Max Velocity</span>
-<span class="text-white">0.01m/s</span>
-</div>
-<input class="w-full" max="5" min="0" type="range" value="1"/>
-</div>
-</div>
-</section>
-<!-- Card 2: Terramechanics -->
-<section class="animate-card delay-2 glass-panel p-6 rounded-xl">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-secondary">explore</span>
-<h2 class="font-headline font-bold text-lg uppercase tracking-wide">Terramechanics</h2>
-</div>
-<div class="grid grid-cols-2 gap-8">
-<div class="flex flex-col items-center">
-<div class="relative w-20 h-20 mb-3">
-<svg class="w-full h-full">
-<circle class="text-white/5" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-width="4"></circle>
-<circle class="progress-ring__circle text-secondary" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-dasharray="226.2" stroke-dashoffset="199" stroke-linecap="round" stroke-width="4"></circle>
-</svg>
-<span class="absolute inset-0 flex items-center justify-center font-mono text-sm">12%</span>
-</div>
-<span class="font-mono text-[10px] text-white/50 uppercase">Slip Ratio</span>
-</div>
-<div class="flex flex-col items-center">
-<div class="relative w-20 h-20 mb-3">
-<svg class="w-full h-full">
-<circle class="text-white/5" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-width="4"></circle>
-<circle class="progress-ring__circle text-accent" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-dasharray="226.2" stroke-dashoffset="124" stroke-linecap="round" stroke-width="4"></circle>
-</svg>
-<span class="absolute inset-0 flex items-center justify-center font-mono text-sm">45N</span>
-</div>
-<span class="font-mono text-[10px] text-white/50 uppercase">Drawbar Pull</span>
-</div>
-<div class="flex flex-col items-center">
-<div class="relative w-20 h-20 mb-3">
-<svg class="w-full h-full">
-<circle class="text-white/5" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-width="4"></circle>
-<circle class="progress-ring__circle text-primary" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-dasharray="226.2" stroke-dashoffset="180" stroke-linecap="round" stroke-width="4"></circle>
-</svg>
-<span class="absolute inset-0 flex items-center justify-center font-mono text-sm">2.1</span>
-</div>
-<span class="font-mono text-[10px] text-white/50 uppercase">Pressure kPa</span>
-</div>
-<div class="flex flex-col items-center">
-<div class="relative w-20 h-20 mb-3">
-<svg class="w-full h-full">
-<circle class="text-white/5" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-width="4"></circle>
-<circle class="progress-ring__circle text-white" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-dasharray="226.2" stroke-dashoffset="210" stroke-linecap="round" stroke-width="4"></circle>
-</svg>
-<span class="absolute inset-0 flex items-center justify-center font-mono text-sm">4mm</span>
-</div>
-<span class="font-mono text-[10px] text-white/50 uppercase">Sinkage</span>
-</div>
-</div>
-</section>
-<!-- Card 3: Path Statistics -->
-<section class="animate-card delay-3 glass-panel p-6 rounded-xl">
-<div class="flex items-center gap-3 mb-6">
-<span class="material-symbols-outlined text-accent">query_stats</span>
-<h2 class="font-headline font-bold text-lg uppercase tracking-wide">Path Statistics</h2>
-</div>
-<div class="grid grid-cols-2 gap-6">
-<div>
-<p class="text-[10px] font-mono text-white/40 uppercase">Distance</p>
-<p class="text-2xl font-headline font-bold text-white"><span class="count-up" data-target="2340">0</span>m</p>
-</div>
-<div>
-<p class="text-[10px] font-mono text-white/40 uppercase">Energy</p>
-<p class="text-2xl font-headline font-bold text-white">12.3Wh</p>
-</div>
-<div>
-<p class="text-[10px] font-mono text-white/40 uppercase">Time</p>
-<p class="text-2xl font-headline font-bold text-white">65h</p>
-</div>
-<div>
-<p class="text-[10px] font-mono text-white/40 uppercase">Waypoints</p>
-<p class="text-2xl font-headline font-bold text-white"><span class="count-up" data-target="156">0</span></p>
-</div>
-</div>
-</section>
-<!-- Card 4: Battery Profile -->
-<section class="animate-card delay-4 glass-panel p-6 rounded-xl">
-<div class="flex items-center justify-between mb-4">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">battery_charging_full</span>
-<h2 class="font-headline font-bold text-lg uppercase tracking-wide">Battery Profile</h2>
-</div>
-<span class="font-mono text-xs text-secondary">82% Remaining</span>
-</div>
-<div class="h-24 w-full flex items-end gap-1">
-<!-- SVG Chart Simulation -->
-<svg class="w-full h-full overflow-visible" viewbox="0 0 100 40">
-<path class="chart-path" d="M0,5 Q25,8 50,20 T100,38" fill="none" stroke="#6C63FF" stroke-width="2"></path>
-<lineargradient id="chart-grad" x1="0" x2="0" y1="0" y2="1">
-<stop offset="0%" stop-color="#6C63FF" stop-opacity="0.3"></stop>
-<stop offset="100%" stop-color="#6C63FF" stop-opacity="0"></stop>
-</lineargradient>
-<path d="M0,5 Q25,8 50,20 T100,38 L100,40 L0,40 Z" fill="url(#chart-grad)"></path>
-</svg>
-</div>
-<p class="mt-4 font-mono text-[10px] text-white/30 text-center uppercase tracking-widest">Discharge curve Alpha-01</p>
-</section>
-</div>
-</main>
-<!-- Footer -->
-<footer class="w-full py-8 px-12 flex flex-col md:flex-row justify-between items-center bg-[#0B0D1A]/80 backdrop-blur-md border-t border-white/5 bottom-0">
-<div class="flex flex-col items-center md:items-start gap-2 mb-6 md:mb-0">
-<div class="font-headline text-xl font-bold text-white">LunarSight</div>
-<p class="font-body text-sm text-white/50">© 2024 LunarSight Mission Control. All rights reserved.</p>
-</div>
-<div class="flex items-center gap-8">
-<a class="font-body text-sm text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Privacy Policy</a>
-<a class="font-body text-sm text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Terms of Service</a>
-<a class="font-body text-sm text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Mission Logs</a>
-</div>
-<div class="flex gap-4 mt-6 md:mt-0">
-<span class="material-symbols-outlined text-white/30 hover:text-[#00D4AA] cursor-pointer transition-all">language</span>
-<span class="material-symbols-outlined text-white/30 hover:text-[#00D4AA] cursor-pointer transition-all">security</span>
-<span class="material-symbols-outlined text-white/30 hover:text-[#00D4AA] cursor-pointer transition-all">database</span>
-</div>
-</footer>
-<script>
-        // Count up animation
-        const counters = document.querySelectorAll('.count-up');
-        const speed = 200;
+    <div class="header-bar">
+        <div>
+            <div class="header-title">ROVER TRAVERSE PATHFINDER SIMULATOR</div>
+            <div class="header-sub">KINODYNAMIC A* / D* LITE PATH OPTIMIZATION WITH TERRAMECHANICS</div>
+        </div>
+        <div style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-secondary);">
+            ROVER MODEL: <span style="color:#FFFFFF; font-weight:700;">PRAGYAN-2 LUNAR ROVER (27 KG)</span>
+        </div>
+    </div>
 
-        counters.forEach(counter => {
-            const updateCount = () => {
-                const target = +counter.getAttribute('data-target');
-                const count = +counter.innerText;
-                const inc = target / speed;
+    <div class="path-layout">
+        <!-- Center Canvas: Terrain & Path Stream -->
+        <div class="canvas-container">
+            <div class="hud-tag">
+                OPTIMIZED PATH: SHACKLETON RIM &rarr; PSR ICE DEPOSIT CLUSTER ALPHA
+            </div>
+            <canvas id="traverse-canvas"></canvas>
+        </div>
 
-                if (count < target) {
-                    counter.innerText = Math.ceil(count + inc);
-                    setTimeout(updateCount, 1);
-                } else {
-                    counter.innerText = target;
+        <!-- Right Control Panel -->
+        <div class="panel-box">
+            <div class="panel-title">MISSION PARAMETERS</div>
+
+            <div class="input-group">
+                <div class="flex justify-between">
+                    <span class="input-lbl">Max Slope Constraint</span>
+                    <span id="slope-val" style="color:#FFFFFF; font-size:0.75rem; font-weight:700;">12°</span>
+                </div>
+                <input class="range-slider" type="range" min="5" max="25" value="12" oninput="document.getElementById('slope-val').innerText = this.value + '°'" />
+            </div>
+
+            <div class="input-group">
+                <div class="flex justify-between">
+                    <span class="input-lbl">Battery Budget Limit</span>
+                    <span id="battery-val" style="color:#FFFFFF; font-size:0.75rem; font-weight:700;">120 Wh</span>
+                </div>
+                <input class="range-slider" type="range" min="50" max="250" value="120" oninput="document.getElementById('battery-val').innerText = this.value + ' Wh'" />
+            </div>
+
+            <div class="input-group">
+                <div class="flex justify-between">
+                    <span class="input-lbl">Regolith Slip Factor</span>
+                    <span id="slip-val" style="color:#FFFFFF; font-size:0.75rem; font-weight:700;">1.25x</span>
+                </div>
+                <input class="range-slider" type="range" min="10" max="25" value="12.5" oninput="document.getElementById('slip-val').innerText = (this.value/10) + 'x'" />
+            </div>
+
+            <button class="btn-calc" onclick="recalculatePath()">CALCULATE OPTIMAL TRAVERSE</button>
+
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; margin-top:10px;" class="panel-title">
+                TRAVERSE TELEMETRY
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-val" id="stat-dist">2,480 meters</div>
+                <div class="stat-lbl">TOTAL TRAVERSE DISTANCE</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-val" id="stat-energy">84.2 Wh</div>
+                <div class="stat-lbl">ESTIMATED ENERGY CONSUMPTION</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-val" id="stat-slope">8.4°</div>
+                <div class="stat-lbl">MAXIMUM INCLINE ON ROUTE</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-val" id="stat-time">3.4 hours</div>
+                <div class="stat-lbl">ESTIMATED TRAVEL DURATION</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traverse Canvas Pathfinder Engine -->
+    <script>
+        (function initTraverseCanvas() {
+            const canvas = document.getElementById('traverse-canvas');
+            const container = canvas.parentElement;
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                drawPath();
+            }
+            window.addEventListener('resize', resize);
+
+            let pathProgress = 0;
+
+            function drawPath() {
+                const w = canvas.width;
+                const h = canvas.height;
+
+                ctx.fillStyle = '#050508';
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid lines
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < w; x += 30) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
                 }
+                for (let y = 0; y < h; y += 30) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+
+                // Craters & Topographic Contour Curves
+                const craters = [
+                    {x: w * 0.3, y: h * 0.4, r: 90},
+                    {x: w * 0.7, y: h * 0.6, r: 120},
+                    {x: w * 0.5, y: h * 0.8, r: 70}
+                ];
+
+                for (let c of craters) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.beginPath(); ctx.arc(c.x, c.y, c.r * 0.6, 0, Math.PI * 2); ctx.stroke();
+                }
+
+                // Waypoints for Optimized Rover Route
+                const waypoints = [
+                    {x: w * 0.15, y: h * 0.85},
+                    {x: w * 0.25, y: h * 0.65},
+                    {x: w * 0.45, y: h * 0.5},
+                    {x: w * 0.62, y: h * 0.35},
+                    {x: w * 0.82, y: h * 0.2}
+                ];
+
+                // Draw Path Line
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([8, 6]);
+                ctx.beginPath();
+                ctx.moveTo(waypoints[0].x, waypoints[0].y);
+                for (let i = 1; i < waypoints.length; i++) {
+                    ctx.lineTo(waypoints[i].x, waypoints[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw Waypoint Markers
+                waypoints.forEach((pt, idx) => {
+                    ctx.fillStyle = idx === 0 ? '#FFFFFF' : (idx === waypoints.length - 1 ? '#FFFFFF' : 'rgba(255,255,255,0.7)');
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, idx === 0 || idx === waypoints.length - 1 ? 6 : 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (idx === 0) {
+                        ctx.font = '10px "JetBrains Mono"';
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillText("LANDER LANDING SITE", pt.x + 12, pt.y + 4);
+                    } else if (idx === waypoints.length - 1) {
+                        ctx.font = '10px "JetBrains Mono"';
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillText("ICE CRATER TARGET ALPHA", pt.x + 12, pt.y + 4);
+                    }
+                });
+
+                // Animated Rover Position Marker
+                pathProgress += 0.003;
+                if (pathProgress > 1) pathProgress = 0;
+
+                const currIdx = Math.floor(pathProgress * (waypoints.length - 1));
+                const nextIdx = Math.min(currIdx + 1, waypoints.length - 1);
+                const segT = (pathProgress * (waypoints.length - 1)) - currIdx;
+
+                const rx = waypoints[currIdx].x + (waypoints[nextIdx].x - waypoints[currIdx].x) * segT;
+                const ry = waypoints[currIdx].y + (waypoints[nextIdx].y - waypoints[currIdx].y) * segT;
+
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(rx, ry, 12, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath(); ctx.arc(rx, ry, 4, 0, Math.PI * 2); ctx.fill();
+
+                requestAnimationFrame(drawPath);
+            }
+            resize();
+
+            window.recalculatePath = function() {
+                pathProgress = 0;
+                document.getElementById('stat-dist').innerText = (2100 + Math.floor(Math.random() * 600)) + ' meters';
+                document.getElementById('stat-energy').innerText = (75 + (Math.random() * 20).toFixed(1)) + ' Wh';
             };
-            
-            // Trigger animation when visible
-            const observer = new IntersectionObserver((entries) => {
-                if(entries[0].isIntersecting) {
-                    updateCount();
-                    observer.unobserve(counter);
-                }
-            }, { threshold: 0.5 });
-            
-            observer.observe(counter);
-        });
-
-        // Hover effect for navigation links
-        document.querySelectorAll('nav a').forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                if (!link.classList.contains('text-[#6C63FF]')) {
-                    link.style.transform = 'translateY(-2px)';
-                }
-            });
-            link.addEventListener('mouseleave', () => {
-                link.style.transform = 'translateY(0)';
-            });
-        });
-
-        // Simple Chart Path Animation
-        const chartPath = document.querySelector('.chart-path');
-        if (chartPath) {
-            const length = chartPath.getTotalLength();
-            chartPath.style.strokeDasharray = length;
-            chartPath.style.strokeDashoffset = length;
-            
-            setTimeout(() => {
-                chartPath.style.transition = 'stroke-dashoffset 2s ease-in-out';
-                chartPath.style.strokeDashoffset = '0';
-            }, 500);
-        }
+        })();
     </script>
-</body></html>
+</body>
+</html>

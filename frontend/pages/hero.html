@@ -1,378 +1,765 @@
 <!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LunarSight — Mission Command</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>LunarSight - Multi-Agent Lunar Ice Detection</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;700;900&amp;family=Space+Mono&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        background: '#0B0D1A',
-                        primary: '#6C63FF',
-                        secondary: '#00D4AA',
-                        accent: '#FF6B9D',
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "1rem",
-                        "xl": "1.5rem",
-                        "full": "9999px"
-                    },
-                    fontFamily: {
-                        headline: ["Space Grotesk", "sans-serif"],
-                        display: ["Space Grotesk", "sans-serif"],
-                        body: ["Inter", "sans-serif"],
-                        label: ["Space Mono", "monospace"]
-                    },
-                    animation: {
-                        'fade-in-up': 'fadeInUp 1s ease-out forwards',
-                        'bounce-slow': 'bounce 3s infinite',
-                    },
-                    keyframes: {
-                        fadeInUp: {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    }
-                },
-            },
+        :root {
+            --bg: #000000;
+            --surface-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.12);
+            --border-glass-active: rgba(255, 255, 255, 0.4);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-muted: rgba(255, 255, 255, 0.4);
         }
-    </script>
-<style>
+
         body {
-            background-color: #0B0D1A;
-            color: white;
-            overflow-x: hidden;
-        }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 20%, #1c2740 0%, #090b12 45%, #020306 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            user-select: none;
         }
 
-        .text-glow-primary {
-            text-shadow: 0 0 20px rgba(108, 99, 255, 0.5);
+        /* ===== Starfield Canvas ===== */
+        #star-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
         }
 
-        .btn-glow-primary {
-            box-shadow: 0 0 20px rgba(108, 99, 255, 0.4);
-        }
-        
-        .btn-glow-primary:hover {
-            box-shadow: 0 0 30px rgba(108, 99, 255, 0.6);
+        /* ===== Hero Layout ===== */
+        .hero-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 90px 4% 30px 4%;
+            z-index: 10;
         }
 
-        .stagger-1 { animation-delay: 0.1s; opacity: 0; }
-        .stagger-2 { animation-delay: 0.3s; opacity: 0; }
-        .stagger-3 { animation-delay: 0.5s; opacity: 0; }
-        .stagger-4 { animation-delay: 0.7s; opacity: 0; }
+        /* ===== Left Panel ===== */
+        .hero-left {
+            max-width: 540px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slideUp 0.8s ease-out 0.3s forwards;
+        }
+
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass-active);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #FFFFFF;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            width: fit-content;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            background: #00D4AA;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00D4AA;
+            animation: pulseDot 2s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.4; }
+        }
+
+        .hero-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 4.5rem;
+            font-weight: 900;
+            line-height: 0.95;
+            letter-spacing: -0.03em;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            text-shadow: 0 0 60px rgba(255, 255, 255, 0.15);
+        }
+
+        .hero-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.08em;
+            line-height: 1.6;
+            text-transform: uppercase;
+            border-left: 2px solid rgba(108, 99, 255, 0.6);
+            padding-left: 14px;
+        }
+
+        .hero-description {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            font-weight: 300;
+        }
+
+        /* Buttons */
+        .action-group {
+            display: flex;
+            gap: 14px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            padding: 13px 26px;
+            background: #FFFFFF;
+            color: #000000;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: 1px solid #FFFFFF;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 24px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-secondary {
+            padding: 13px 26px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #FFFFFF;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(16px);
+        }
+
+        .btn-secondary:hover {
+            border-color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Telemetry Grid */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .telemetry-card {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            padding: 12px;
+            border-radius: 6px;
+            backdrop-filter: blur(16px);
+            transition: border-color 0.3s;
+        }
+
+        .telemetry-card:hover {
+            border-color: rgba(108, 99, 255, 0.4);
+        }
+
+        .telemetry-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .telemetry-lbl {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 3px;
+        }
+
+        /* ===== 3D Moon Stage ===== */
+        .moon-stage {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 58vw;
+            height: 85vh;
+            max-width: 900px;
+            z-index: 10;
+        }
+
+        #moon-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            display: block;
+        }
+
+        #moon-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Controls Hint Legend */
+        .moon-legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--border-glass);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        /* Floating Hotspot Telemetry Card */
+        .hotspot-hud {
+            position: absolute;
+            left: 20px;
+            bottom: 30px;
+            background: rgba(9, 11, 18, 0.88);
+            border: 1px solid var(--border-glass-active);
+            padding: 16px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(24px);
+            width: 320px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 212, 170, 0.15);
+            pointer-events: all;
+            z-index: 30;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .hotspot-hud.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .hud-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: #FFFFFF;
+        }
+
+        .hud-coord {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            margin-bottom: 5px;
+        }
+
+        .hud-key { color: var(--text-secondary); }
+        .hud-value { color: #FFFFFF; font-weight: 700; }
+
+        .ice-indicator {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 10px;
+            background: rgba(0, 212, 170, 0.15);
+            border: 1px solid rgba(0, 212, 170, 0.4);
+            border-radius: 999px;
+            color: #00D4AA;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        @media (max-width: 1024px) {
+            .hero-container {
+                flex-direction: column;
+                padding-top: 100px;
+                justify-content: flex-start;
+            }
+            .hero-left { max-width: 100%; }
+            .moon-stage {
+                position: relative;
+                right: auto; top: auto; transform: none;
+                width: 100vw; height: 50vh;
+            }
+            .hero-title { font-size: 2.8rem; }
+        }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col relative font-body selection:bg-primary/30">
-<!-- Fixed Shader Background -->
-<div class="fixed inset-0 z-[-2]">
-<!-- STITCH_SHADER_START:ANIMATION_2 class="absolute inset-0 w-full h-full" -->
-<div class="absolute inset-0 w-full h-full" style="display:block;">
-<canvas id="shader-canvas-ANIMATION_2" style="display:block;width:100%;height:100%"></canvas>
+<body>
+
+<canvas id="star-canvas"></canvas>
+
+<div class="hero-container">
+    <!-- Left Panel -->
+    <div class="hero-left">
+        <div class="status-pill">
+            <span class="status-dot"></span>
+            <span>CHANDRAYAAN-2 DFSAR TELEMETRY</span>
+        </div>
+
+        <h1 class="hero-title">LUNARSIGHT</h1>
+
+        <div class="hero-subtitle">
+            AUTONOMOUS MULTI-AGENT WATER ICE DETECTION &amp; ROVER TRAVERSE PATHFINDING
+        </div>
+
+        <p class="hero-description">
+            Orchestrating 5 deep-space autonomous AI agents to process Chandrayaan-2 Dual-Frequency Synthetic Aperture Radar (DFSAR) data. Detecting subsurface polar ice deposits in Permanently Shadowed Regions (PSRs) at 89.9°S.
+        </p>
+
+        <div class="action-group">
+            <button class="btn-primary" onclick="try{parent.navigateTo('pipeline')}catch(e){}">
+                <span class="material-symbols-outlined">radar</span>
+                <span>LAUNCH PIPELINE</span>
+            </button>
+            <button class="btn-secondary" onclick="try{parent.navigateTo('data-explorer')}catch(e){}">
+                <span class="material-symbols-outlined">grid_view</span>
+                <span>EXPLORE DATA</span>
+            </button>
+            <button class="btn-secondary" onclick="try{parent.navigateTo('pathfinder')}catch(e){}">
+                <span class="material-symbols-outlined">route</span>
+                <span>PATHFINDER</span>
+            </button>
+        </div>
+
+        <div class="telemetry-grid">
+            <div class="telemetry-card">
+                <div class="telemetry-val">89.9° S</div>
+                <div class="telemetry-lbl">TARGET LATITUDE</div>
+            </div>
+            <div class="telemetry-card">
+                <div class="telemetry-val">99.4%</div>
+                <div class="telemetry-lbl">RADAR ACCURACY</div>
+            </div>
+            <div class="telemetry-card">
+                <div class="telemetry-val">1.42</div>
+                <div class="telemetry-lbl">S-BAND CPR AVG</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive 3D Moon Stage -->
+    <div class="moon-stage">
+        <div class="moon-legend">
+            <span class="material-symbols-outlined" style="font-size:16px;">touch_app</span>
+            <span>DRAG TO ROTATE • SCROLL TO ZOOM • CLICK CRATERS</span>
+        </div>
+
+        <canvas id="moon-canvas"></canvas>
+
+        <div class="hotspot-hud" id="hotspot-hud">
+            <div class="hud-header">
+                <span class="hud-title" id="hud-name">SHACKLETON CRATER</span>
+                <span class="hud-coord" id="hud-latlon">89.9°S 0.0°E</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-key">Ice Probability:</span>
+                <span class="hud-value" id="hud-prob">94.8%</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-key">S-Band CPR:</span>
+                <span class="hud-value" id="hud-cpr">1.48</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-key">Depth:</span>
+                <span class="hud-value" id="hud-depth">4.2 km</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-key">PSR Temp:</span>
+                <span class="hud-value" id="hud-temp">40 K (-233°C)</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-key">Volatiles:</span>
+                <span class="hud-value" id="hud-vol">5.8 wt% H₂O</span>
+            </div>
+            <div class="ice-indicator" id="hud-ice">⬢ ICE DEPOSITS CONFIRMED</div>
+        </div>
+    </div>
+</div>
+
+<!-- Starfield Background -->
 <script>
 (function() {
-  const canvas = document.getElementById('shader-canvas-ANIMATION_2');
+    const canvas = document.getElementById('star-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, stars = [];
 
-  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
-  // This fires on initial layout and whenever the element is resized.
-  function syncSize() {
-    const w = canvas.clientWidth  || 1280;
-    const h = canvas.clientHeight || 720;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width  = w;
-      canvas.height = h;
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
     }
-  }
-  if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(syncSize).observe(canvas);
-  }
-  syncSize();
+    resize();
+    window.addEventListener('resize', resize);
 
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-  if (!gl) return;
-  const vs = `attribute vec2 a_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = a_position * 0.5 + 0.5;
-  gl_Position = vec4(a_position, 0.0, 1.0);
-}`;
-  const fs = `precision highp float;
-uniform float u_time;
-uniform vec2 u_resolution;
-
-float noise(vec2 p) {
-    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-void main() {
-    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-    vec3 color = vec3(0.043, 0.051, 0.102); // #0B0D1A
-    
-    // Star layers
-    for (float i = 0.0; i < 3.0; i++) {
-        vec2 grid = uv * (10.0 + i * 20.0);
-        vec2 id = floor(grid);
-        vec2 gv = fract(grid) - 0.5;
-        
-        float n = noise(id);
-        if (n > 0.95) {
-            float size = 0.01 + n * 0.02;
-            float twinkle = sin(u_time * (n * 5.0) + n * 10.0) * 0.5 + 0.5;
-            float dist = length(gv);
-            float star = smoothstep(size, 0.0, dist) * twinkle;
-            color += star * (0.8 + 0.2 * n);
-        }
-    }
-    
-    gl_FragColor = vec4(color, 1.0);
-}`;
-  function cs(type, src) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return s;
-  }
-  const prog = gl.createProgram();
-  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
-  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-  const pos = gl.getAttribLocation(prog, 'a_position');
-  gl.enableVertexAttribArray(pos);
-  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
-  const uTime = gl.getUniformLocation(prog, 'u_time');
-  const uRes = gl.getUniformLocation(prog, 'u_resolution');
-  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
-
-  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
-  // Shaders that need normalized coords should use: u_mouse / u_resolution.
-  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
-  window.addEventListener('mousemove', (event) => {
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width && rect.height) {
-      const nx = (event.clientX - rect.left) / rect.width;
-      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
-      mouse.x = nx * canvas.width;
-      mouse.y = ny * canvas.height;
-    }
-  });
-
-  function render(t) {
-    if (typeof ResizeObserver === 'undefined') syncSize();
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    if (uTime) gl.uniform1f(uTime, t * 0.001);
-    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
-    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    requestAnimationFrame(render);
-  }
-  render(0);
-})();
-</script>
-</div>
-<!-- STITCH_SHADER_END:ANIMATION_2 -->
-</div>
-<!-- Top Navigation Bar (Shared Component) -->
-<nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_0_20px_rgba(108,99,255,0.2)] rounded-full mt-4 mx-auto w-[95%] max-w-7xl">
-<div class="flex items-center space-x-2">
-<span class="font-headline text-2xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-[#6C63FF] to-[#FF6B9D]">LunarSight</span>
-</div>
-<div class="hidden md:flex space-x-8 items-center font-headline text-lg uppercase tracking-wider font-bold">
-<!-- Active state applies here (Home implied) but not directly mapping, defaulting inactive style for all -->
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80 transition-transform" href="#">Pipeline</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80 transition-transform" href="#">Agents</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80 transition-transform" href="#">Data Explorer</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80 transition-transform" href="#">Pathfinder</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80 transition-transform" href="#">About</a>
-</div>
-<div class="hidden md:flex space-x-4">
-<button class="px-6 py-2 rounded-full border border-white/20 text-white/70 hover:text-white hover:bg-white/10 transition-all font-headline text-sm font-bold tracking-widest uppercase">Explore Data</button>
-<button class="px-6 py-2 rounded-full bg-primary text-white font-headline text-sm font-bold tracking-widest uppercase hover:bg-primary/80 btn-glow-primary transition-all">Launch Pipeline</button>
-</div>
-<!-- Mobile Menu Toggle -->
-<button class="md:hidden text-white/70">
-<span class="material-symbols-outlined text-3xl">menu</span>
-</button>
-</nav>
-<!-- Hero Section -->
-<main class="flex-grow flex flex-col justify-center items-center relative min-h-screen pt-24 px-4 overflow-hidden">
-<!-- 3D Moon Scene (Parallax wrapper) -->
-<div class="absolute inset-0 z-[-1] flex items-center justify-center pointer-events-none opacity-80 mix-blend-screen transform transition-transform duration-100 ease-linear" id="parallax-moon">
-<!-- STITCH_THREEJS_START:ANIMATION_3 class="w-full h-full max-w-4xl max-h-4xl" -->
-<div class="w-full h-full max-w-4xl max-h-4xl" style="display:block;">
-<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
-<div id="threejs-container-ANIMATION_3" style="width:100%;height:100%"></div>
-<script>
-(function() {
-  const container = document.getElementById('threejs-container-ANIMATION_3');
-  const devicePixelRatio = window.devicePixelRatio || 1;
-  const scene = new THREE.Scene();
-const width = container.clientWidth || window.innerWidth;
-const height = container.clientHeight || window.innerHeight;
-const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-camera.position.z = 4;
-
-const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-renderer.setSize(width, height);
-renderer.setPixelRatio(window.devicePixelRatio);
-container.appendChild(renderer.domElement);
-
-// Lighting
-const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
-scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight.position.set(5, 3, 5);
-scene.add(directionalLight);
-
-// Moon
-const geometry = new THREE.SphereGeometry(1.5, 64, 64);
-const textureLoader = new THREE.TextureLoader();
-
-// Placeholder moon texture using procedural approach or a standard high-quality URL if available
-// For this generation, we use a basic material that looks like a moon
-const material = new THREE.MeshPhongMaterial({
-    color: 0xcccccc,
-    shininess: 5,
-    bumpScale: 0.05,
-});
-
-const moon = new THREE.Mesh(geometry, material);
-scene.add(moon);
-
-// South Pole Ice Glow (Teal/Cyan)
-const glowGeometry = new THREE.SphereGeometry(1.52, 32, 32);
-const glowMaterial = new THREE.MeshBasicMaterial({
-    color: 0x00D4AA,
-    transparent: true,
-    opacity: 0.2,
-    side: THREE.BackSide
-});
-const iceGlow = new THREE.Mesh(glowGeometry, glowMaterial);
-// Position it at the "bottom" (south pole)
-iceGlow.scale.set(0.4, 0.2, 0.4);
-iceGlow.position.y = -1.4;
-moon.add(iceGlow);
-
-// Floating Ice Particles
-const particlesCount = 100;
-const particlesGeometry = new THREE.BufferGeometry();
-const posArray = new Float32Array(particlesCount * 3);
-
-for(let i = 0; i < particlesCount * 3; i++) {
-    posArray[i] = (Math.random() - 0.5) * 0.5;
-}
-particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-const particlesMaterial = new THREE.PointsMaterial({
-    size: 0.02,
-    color: 0x00D4AA,
-    transparent: true,
-    opacity: 0.6
-});
-const iceParticles = new THREE.Points(particlesGeometry, particlesMaterial);
-iceParticles.position.y = -1.5;
-moon.add(iceParticles);
-
-window.addEventListener('resize', () => {
-    const w = container.clientWidth || window.innerWidth;
-    const h = container.clientHeight || window.innerHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-});
-
-function animate() {
-    requestAnimationFrame(animate);
-    moon.rotation.y += 0.002;
-    
-    // Pulse glow
-    iceGlow.material.opacity = 0.2 + Math.sin(Date.now() * 0.002) * 0.1;
-    
-    // Animate particles
-    iceParticles.rotation.y += 0.005;
-    
-    renderer.render(scene, camera);
-}
-animate();
-})();
-</script>
-</div>
-<!-- STITCH_THREEJS_END:ANIMATION_3 -->
-</div>
-<!-- Content -->
-<div class="z-10 text-center max-w-4xl mx-auto flex flex-col items-center justify-center mt-20">
-<div class="animate-fade-in-up stagger-1 inline-flex items-center space-x-2 bg-secondary/10 border border-secondary/30 px-4 py-1 rounded-full mb-6 glass-panel">
-<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-<span class="font-label text-xs tracking-widest uppercase text-secondary">Mission Control Active</span>
-</div>
-<h1 class="font-headline text-6xl md:text-8xl font-black mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-primary animate-fade-in-up stagger-2 drop-shadow-2xl text-glow-primary">
-                LunarSight
-            </h1>
-<p class="font-body text-xl md:text-2xl text-white/70 mb-10 max-w-2xl leading-relaxed animate-fade-in-up stagger-3 font-light">
-                Multi-Agent Lunar Ice Detection &amp; Pathfinding. Orchestrating autonomous swarms for resource discovery on the lunar surface.
-            </p>
-<div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 animate-fade-in-up stagger-4">
-<button class="px-8 py-4 rounded-full bg-primary text-white font-headline text-lg font-bold tracking-widest uppercase hover:bg-primary/90 hover:scale-105 btn-glow-primary transition-all duration-300 flex items-center justify-center group">
-<span>Launch Pipeline</span>
-<span class="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">rocket_launch</span>
-</button>
-<button class="px-8 py-4 rounded-full glass-panel text-white font-headline text-lg font-bold tracking-widest uppercase hover:bg-white/10 hover:border-white/30 hover:scale-105 transition-all duration-300 flex items-center justify-center">
-<span class="material-symbols-outlined mr-2">database</span>
-<span>Explore Data</span>
-</button>
-</div>
-</div>
-<!-- Scroll Indicator -->
-<div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-fade-in-up stagger-4 flex flex-col items-center">
-<span class="font-label text-[10px] text-white/40 tracking-[0.2em] mb-2 uppercase">Scroll to descend</span>
-<span class="material-symbols-outlined text-white/50 animate-bounce-slow text-3xl">keyboard_double_arrow_down</span>
-</div>
-</main>
-<!-- Spacer to demonstrate scrolling/parallax (Optional, remove if strictly single screen) -->
-<div class="h-screen w-full bg-background/50 backdrop-blur-sm relative z-10 flex items-center justify-center border-t border-white/5">
-<div class="glass-panel p-12 rounded-2xl max-w-3xl text-center">
-<span class="material-symbols-outlined text-5xl text-secondary mb-4">radar</span>
-<h2 class="font-headline text-3xl font-bold mb-4">Scanning Sector Alpha</h2>
-<p class="font-label text-white/60">Awaiting telemetry data from deployed agents...</p>
-</div>
-</div>
-<!-- Footer -->
-<footer class="w-full py-8 px-12 flex justify-between items-center bg-[#0B0D1A]/80 backdrop-blur-md border-t border-white/5 relative z-10">
-<div class="flex items-center space-x-4">
-<span class="font-headline text-xl font-bold text-white">LunarSight</span>
-<span class="font-body text-sm text-white/50">© 2024 LunarSight Mission Control. All rights reserved.</span>
-</div>
-<div class="flex space-x-6 font-body text-sm text-white/40">
-<a class="hover:text-[#FF6B9D] transition-colors opacity-100 hover:opacity-80" href="#">Privacy Policy</a>
-<a class="hover:text-[#FF6B9D] transition-colors opacity-100 hover:opacity-80" href="#">Terms of Service</a>
-<a class="hover:text-[#FF6B9D] transition-colors opacity-100 hover:opacity-80" href="#">Mission Logs</a>
-</div>
-</footer>
-<script>
-        // Simple Parallax Effect
-        window.addEventListener('scroll', () => {
-            const moon = document.getElementById('parallax-moon');
-            const scrolled = window.pageYOffset;
-            if(moon) {
-                // Move moon slower than scroll (0.3 ratio)
-                moon.style.transform = `translateY(${scrolled * 0.3}px)`;
-            }
+    for (let i = 0; i < 600; i++) {
+        stars.push({
+            x: Math.random() * 4000 - 1000,
+            y: Math.random() * 3000 - 500,
+            r: Math.random() * 1.5 + 0.3,
+            speed: Math.random() * 0.5 + 0.2,
+            phase: Math.random() * Math.PI * 2,
         });
-    </script>
-</body></html>
+    }
+
+    function drawStars(t) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        for (const s of stars) {
+            const twinkle = 0.4 + Math.sin(t * s.speed + s.phase) * 0.3;
+            ctx.beginPath();
+            ctx.arc(s.x % w, s.y % h, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
+            ctx.fill();
+        }
+        requestAnimationFrame(drawStars);
+    }
+    drawStars(0);
+})();
+</script>
+
+<!-- ===== INTERACTIVE 3D MOON ENGINE WITH UPLOADED 2K_MOON TEXTURE ===== -->
+<script>
+(function() {
+    'use strict';
+
+    const canvas = document.getElementById('moon-canvas');
+    const container = canvas.parentElement;
+    const hud = document.getElementById('hotspot-hud');
+
+    function getWidth() { return container.clientWidth || (window.innerWidth * 0.55); }
+    function getHeight() { return container.clientHeight || (window.innerHeight * 0.85); }
+
+    // ===== THREE.JS SETUP =====
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, getWidth() / getHeight(), 0.1, 1000);
+    camera.position.z = 4.8;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(getWidth(), getHeight());
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.3;
+
+    // ===== LIGHTING (Matches Realistic Moon Shadows) =====
+    scene.add(new THREE.AmbientLight(0x303040, 0.3));
+
+    const sunLight = new THREE.DirectionalLight(0xfff8e8, 3.8);
+    sunLight.position.set(5, 3.5, 5);
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0x607090, 0.15);
+    fillLight.position.set(-3, -2, 2);
+    scene.add(fillLight);
+
+    // ===== LOAD UPLOADED 2K_MOON IMAGE TEXTURE =====
+    const moonGeo = new THREE.SphereGeometry(1.6, 128, 128);
+    const textureLoader = new THREE.TextureLoader();
+
+    const moonMat = new THREE.MeshPhongMaterial({
+        shininess: 6,
+        specular: new THREE.Color(0x1a1a1a),
+    });
+
+    const moon = new THREE.Mesh(moonGeo, moonMat);
+    moon.rotation.x = 0.45; // Tilt to expose South Pole PSR craters
+    scene.add(moon);
+
+    // Load your uploaded 2k_moon image asset
+    textureLoader.load('../assets/2k_moon.jpg', function(tex) {
+        tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        moonMat.map = tex;
+        moonMat.bumpMap = tex;
+        moonMat.bumpScale = 0.04;
+        moonMat.needsUpdate = true;
+    });
+
+    // Atmospheric Edge Glow Shader
+    const atmGeo = new THREE.SphereGeometry(1.65, 64, 64);
+    const atmMat = new THREE.ShaderMaterial({
+        uniforms: { viewVec: { value: camera.position } },
+        vertexShader: `
+            uniform vec3 viewVec;
+            varying float intensity;
+            void main() {
+                vec3 vNorm = normalize(normalMatrix * normal);
+                vec3 vView = normalize(normalMatrix * viewVec);
+                intensity = pow(0.62 - dot(vNorm, vView), 3.2);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            varying float intensity;
+            void main() {
+                vec3 glow = vec3(0.40, 0.38, 0.58) * intensity;
+                gl_FragColor = vec4(glow, intensity * 0.25);
+            }
+        `,
+        side: THREE.FrontSide,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+    });
+    scene.add(new THREE.Mesh(atmGeo, atmMat));
+
+    // South Pole Ice Glow Ring & Particles
+    const iceGlowMat = new THREE.MeshBasicMaterial({
+        color: 0x00D4AA, transparent: true, opacity: 0.12, side: THREE.DoubleSide,
+    });
+    const iceGlow = new THREE.Mesh(new THREE.SphereGeometry(0.35, 32, 32), iceGlowMat);
+    iceGlow.position.y = -1.48;
+    moon.add(iceGlow);
+
+    const radarRingMat = new THREE.MeshBasicMaterial({
+        color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.2,
+    });
+    const radarRing = new THREE.Mesh(new THREE.RingGeometry(1.62, 1.72, 64), radarRingMat);
+    radarRing.rotation.x = Math.PI / 2;
+    radarRing.position.y = -1.45;
+    moon.add(radarRing);
+
+    const icePartCount = 120;
+    const icePartPos = new Float32Array(icePartCount * 3);
+    for (let i = 0; i < icePartCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const r = 0.08 + Math.random() * 0.4;
+        icePartPos[i * 3]     = Math.cos(theta) * r;
+        icePartPos[i * 3 + 1] = -1.4 + (Math.random() - 0.5) * 0.4;
+        icePartPos[i * 3 + 2] = Math.sin(theta) * r;
+    }
+    const icePartGeo = new THREE.BufferGeometry();
+    icePartGeo.setAttribute('position', new THREE.BufferAttribute(icePartPos, 3));
+    const icePartMat = new THREE.PointsMaterial({
+        color: 0x00D4AA, size: 0.015, transparent: true, opacity: 0.5,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const iceParts = new THREE.Points(icePartGeo, icePartMat);
+    moon.add(iceParts);
+
+    // ===== 3D CRATER HOTSPOTS =====
+    const hotspots = [
+        { name: "SHACKLETON", latlon: "89.9°S 0.0°E", prob: "94.8%", cpr: "1.48", depth: "4.2 km", temp: "40 K (-233°C)", vol: "5.8 wt% H₂O", ice: true,
+          pos: new THREE.Vector3(0, -1.55, 0.4) },
+        { name: "CABEUS", latlon: "84.9°S 35.5°W", prob: "96.4%", cpr: "1.61", depth: "5.0 km", temp: "38 K (-235°C)", vol: "6.4 wt% H₂O", ice: true,
+          pos: new THREE.Vector3(-0.2, -1.38, 0.7) },
+        { name: "HAWORTH", latlon: "87.4°S 2.6°W", prob: "91.2%", cpr: "1.42", depth: "3.8 km", temp: "42 K (-231°C)", vol: "4.9 wt% H₂O", ice: true,
+          pos: new THREE.Vector3(0.5, -1.48, 0.3) },
+        { name: "FAUSTINI", latlon: "87.3°S 77.0°E", prob: "88.6%", cpr: "1.35", depth: "3.1 km", temp: "48 K (-225°C)", vol: "4.1 wt% H₂O", ice: true,
+          pos: new THREE.Vector3(-0.5, -1.48, 0.35) },
+    ];
+
+    const hotspotMeshes = [];
+    hotspots.forEach(h => {
+        const dotMat = new THREE.MeshBasicMaterial({ color: 0x00D4AA });
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), dotMat);
+        dot.position.copy(h.pos);
+        dot.userData = h;
+        moon.add(dot);
+        hotspotMeshes.push(dot);
+
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0x00D4AA, transparent: true, opacity: 0.3, side: THREE.DoubleSide,
+        });
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.08, 32), ringMat);
+        ring.position.copy(h.pos);
+        ring.lookAt(0, 0, 0);
+        moon.add(ring);
+    });
+
+    // ===== INTERACTION STATE (DRAG ROTATE + INERTIA + ZOOM + RAYCASTING) =====
+    let isDragging = false;
+    let prevMouse = { x: 0, y: 0 };
+    let velocity = { x: 0, y: 0.002 };
+    const INERTIA = 0.95;
+    const MIN_SPIN = 0.0012;
+    const raycaster = new THREE.Raycaster();
+    const mouseVec = new THREE.Vector2();
+
+    function onDown(e) {
+        isDragging = true;
+        const p = e.touches ? e.touches[0] : e;
+        prevMouse = { x: p.clientX, y: p.clientY };
+    }
+
+    function onMove(e) {
+        const p = e.touches ? e.touches[0] : e;
+        if (isDragging && moon) {
+            const dx = p.clientX - prevMouse.x;
+            const dy = p.clientY - prevMouse.y;
+            velocity.y = dx * 0.003;
+            velocity.x = dy * 0.003;
+            moon.rotation.y += velocity.y;
+            moon.rotation.x += velocity.x;
+            moon.rotation.x = Math.max(-1.2, Math.min(1.2, moon.rotation.x));
+            prevMouse = { x: p.clientX, y: p.clientY };
+        }
+        const rect = canvas.getBoundingClientRect();
+        mouseVec.x = ((p.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseVec.y = -((p.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function onUp() { isDragging = false; }
+
+    function onWheel(e) {
+        e.preventDefault();
+        camera.position.z = Math.max(2.8, Math.min(10, camera.position.z + e.deltaY * 0.004));
+    }
+
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onUp);
+    canvas.addEventListener('mouseleave', onUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('touchstart', onDown, { passive: true });
+    canvas.addEventListener('touchmove', onMove, { passive: true });
+    canvas.addEventListener('touchend', onUp);
+
+    canvas.addEventListener('click', () => {
+        if (!moon) return;
+        raycaster.setFromCamera(mouseVec, camera);
+        const hits = raycaster.intersectObjects(hotspotMeshes);
+        if (hits.length > 0) {
+            const h = hits[0].object.userData;
+            document.getElementById('hud-name').textContent = h.name + ' CRATER';
+            document.getElementById('hud-latlon').textContent = h.latlon;
+            document.getElementById('hud-prob').textContent = h.prob;
+            document.getElementById('hud-cpr').textContent = h.cpr;
+            document.getElementById('hud-depth').textContent = h.depth;
+            document.getElementById('hud-temp').textContent = h.temp;
+            document.getElementById('hud-vol').textContent = h.vol;
+            document.getElementById('hud-ice').style.display = h.ice ? 'inline-block' : 'none';
+            hud.classList.add('visible');
+        }
+    });
+
+    function updateSize() {
+        const w = getWidth();
+        const h = getHeight();
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+    }
+    window.addEventListener('resize', updateSize);
+    setTimeout(updateSize, 100);
+
+    // ===== ANIMATION LOOP =====
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+
+        if (moon && !isDragging) {
+            velocity.y *= INERTIA;
+            velocity.x *= INERTIA;
+            if (Math.abs(velocity.y) < MIN_SPIN) velocity.y = MIN_SPIN;
+            moon.rotation.y += velocity.y;
+            moon.rotation.x += velocity.x;
+        }
+
+        if (iceGlow) {
+            iceGlow.material.opacity = 0.10 + Math.sin(t * 1.5) * 0.06;
+            iceGlow.scale.setScalar(1 + Math.sin(t * 2) * 0.15);
+        }
+
+        if (radarRing) {
+            radarRing.rotation.z += 0.015;
+            radarRing.material.opacity = 0.15 + Math.sin(t * 3) * 0.08;
+        }
+
+        if (iceParts) {
+            iceParts.rotation.y = t * 0.25;
+        }
+
+        hotspotMeshes.forEach((m, i) => {
+            const pulse = 0.6 + Math.sin(t * 3 + i * 1.5) * 0.4;
+            m.material.opacity = pulse;
+            m.scale.setScalar(1 + Math.sin(t * 2 + i) * 0.3);
+        });
+
+        if (atmMat) {
+            atmMat.uniforms.viewVec.value = camera.position;
+        }
+
+        raycaster.setFromCamera(mouseVec, camera);
+        const hits = raycaster.intersectObjects(hotspotMeshes);
+        canvas.style.cursor = hits.length > 0 ? 'pointer' : (isDragging ? 'grabbing' : 'grab');
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    setTimeout(() => { hud.classList.add('visible'); }, 1500);
+})();
+</script>
+
+</body>
+</html>

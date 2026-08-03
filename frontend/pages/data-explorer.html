@@ -1,422 +1,337 @@
 <!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LunarSight — GIS &amp; Radar Ice Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>LunarSight | Data Explorer</title>
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=Space+Mono&amp;display=swap" rel="stylesheet"/>
-<!-- Material Symbols -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#6C63FF",
-                        secondary: "#00D4AA",
-                        accent: "#FF6B9D",
-                        surface: "rgba(255, 255, 255, 0.05)",
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "1rem",
-                        "xl": "1.5rem",
-                        "full": "9999px"
-                    },
-                    fontFamily: {
-                        headline: ["Space Grotesk", "sans-serif"],
-                        display: ["Space Grotesk", "sans-serif"],
-                        body: ["Inter", "sans-serif"],
-                        label: ["Space Mono", "monospace"]
-                    }
-                },
-            },
+        :root {
+            --bg: #000000;
+            --surface-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.12);
+            --border-glass-active: rgba(255, 255, 255, 0.4);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-muted: rgba(255, 255, 255, 0.4);
         }
-    </script>
-<style>
+
         body {
-            background-color: #0B0D1A;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden; /* App-like feel */
-        }
-        .font-headline { font-family: 'Space Grotesk', sans-serif; }
-        .font-label { font-family: 'Space Mono', monospace; }
-        
-        .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-
-        /* Animated Dotted Path */
-        .traverse-path {
-            stroke-dasharray: 8;
-            animation: dash 20s linear infinite;
-        }
-        @keyframes dash {
-            to { stroke-dashoffset: -1000; }
-        }
-
-        /* Histogram Animation */
-        .bar-grow {
-            transform-origin: bottom;
-            animation: growUp 1.2s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards;
-        }
-        @keyframes growUp {
-            from { transform: scaleY(0); }
-            to { transform: scaleY(1); }
-        }
-
-        /* Custom range slider styling */
-        input[type=range] {
-            -webkit-appearance: none;
             background: transparent;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: rgba(255,255,255,0.1);
-            border-radius: 2px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            height: 12px;
-            width: 12px;
-            border-radius: 50%;
-            background: #6C63FF;
-            cursor: pointer;
-            -webkit-appearance: none;
-            margin-top: -4px;
-            box-shadow: 0 0 10px rgba(108, 99, 255, 0.5);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 85px 4% 30px 4%;
+            user-select: none;
         }
 
-        .star-field {
-            position: absolute;
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 14px;
+        }
+
+        .header-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+        }
+
+        .header-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            letter-spacing: 0.08em;
+        }
+
+        .explorer-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 16px;
+            height: calc(100vh - 170px);
+        }
+
+        .panel-box {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 18px;
+            backdrop-filter: blur(24px);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .layer-toggle.active {
+            border-color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .layer-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+
+        /* Radar Map Canvas Container */
+        .map-stage {
+            position: relative;
+            background: #000000;
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #radar-canvas {
             width: 100%;
             height: 100%;
-            background-image: 
-                radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
-                radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
-                radial-gradient(1.5px 1.5px at 50px 160px, #fff, rgba(0,0,0,0)),
-                radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0));
-            background-repeat: repeat;
-            background-size: 200px 200px;
-            opacity: 0.15;
-            z-index: 0;
+        }
+
+        .hud-overlay-tag {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--border-glass-active);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #FFFFFF;
+            letter-spacing: 0.1em;
+            backdrop-filter: blur(16px);
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .metric-val {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .metric-lbl {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 1100px) {
+            .explorer-layout { grid-template-columns: 1fr; height: auto; }
         }
     </style>
 </head>
-<body class="h-screen flex flex-col">
-<div class="star-field"></div>
-<!-- TopNavBar (Shared Component) -->
-<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 rounded-full mt-4 mx-auto w-[95%] max-w-7xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl shadow-indigo-500/10">
-<div class="font-headline text-2xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-[#6C63FF] to-[#FF6B9D]">
-            LunarSight
+<body>
+
+    <div class="header-bar">
+        <div>
+            <div class="header-title">LUNAR SOUTH POLE GIS &amp; RADAR EXPLORER</div>
+            <div class="header-sub">CHANDRAYAAN-2 DFSAR HIGH-RESOLUTION POLAR ICE RASTER MAPS</div>
         </div>
-<nav class="hidden md:flex items-center gap-8 font-headline text-lg uppercase tracking-wider font-bold">
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">Pipeline</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">Agents</a>
-<a class="text-[#6C63FF] border-b-2 border-[#6C63FF] pb-1 hover:scale-105 transition-all duration-300" href="#">Data Explorer</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">Pathfinder</a>
-<a class="text-white/70 hover:text-white transition-colors hover:scale-105 transition-all duration-300" href="#">About</a>
-</nav>
-<div class="flex items-center gap-4">
-<button class="px-6 py-2 rounded-full bg-[#6C63FF] text-white font-bold hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 active:scale-95">Launch Pipeline</button>
-</div>
-</header>
-<!-- Main Content Canvas -->
-<main class="flex-1 mt-24 mb-2 flex overflow-hidden relative z-10 px-6 gap-6">
-<!-- Left Sidebar: Layer Toggles -->
-<aside class="w-72 glass rounded-xl p-5 flex flex-col gap-6 overflow-y-auto">
-<h2 class="font-headline text-xl font-bold tracking-tight border-b border-white/10 pb-3">Map Layers</h2>
-<div class="space-y-6">
-<!-- Layer Items -->
-<div class="space-y-3">
-<label class="flex items-center justify-between group cursor-pointer">
-<span class="flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-<input checked="" class="rounded border-white/20 bg-white/5 text-primary focus:ring-primary" type="checkbox"/>
-                            DEM Elevation
-                        </span>
-<span class="material-symbols-outlined text-white/40 text-lg">layers</span>
-</label>
-<input class="w-full opacity-opacity-slider" max="100" min="0" type="range" value="80"/>
-</div>
-<div class="space-y-3">
-<label class="flex items-center justify-between group cursor-pointer">
-<span class="flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-<input class="rounded border-white/20 bg-white/5 text-primary focus:ring-primary" type="checkbox"/>
-                            Slope Map
-                        </span>
-<span class="material-symbols-outlined text-white/40 text-lg">terrain</span>
-</label>
-<input class="w-full opacity-slider" max="100" min="0" type="range" value="40"/>
-</div>
-<div class="space-y-3">
-<label class="flex items-center justify-between group cursor-pointer">
-<span class="flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-<input checked="" class="rounded border-white/20 bg-white/5 text-primary focus:ring-primary" type="checkbox"/>
-                            CPR (Ice)
-                        </span>
-<span class="material-symbols-outlined text-secondary text-lg">ac_unit</span>
-</label>
-<input class="w-full opacity-slider" max="100" min="0" type="range" value="100"/>
-</div>
-<div class="space-y-3">
-<label class="flex items-center justify-between group cursor-pointer">
-<span class="flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-<input checked="" class="rounded border-white/20 bg-white/5 text-primary focus:ring-primary" type="checkbox"/>
-                            Ice Mask
-                        </span>
-<span class="material-symbols-outlined text-white/40 text-lg">texture</span>
-</label>
-<input class="w-full opacity-slider" max="100" min="0" type="range" value="60"/>
-</div>
-<div class="space-y-3">
-<label class="flex items-center justify-between group cursor-pointer">
-<span class="flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-<input class="rounded border-white/20 bg-white/5 text-primary focus:ring-primary" type="checkbox"/>
-                            Confidence Map
-                        </span>
-<span class="material-symbols-outlined text-white/40 text-lg">verified</span>
-</label>
-<input class="w-full opacity-slider" max="100" min="0" type="range" value="30"/>
-</div>
-<div class="space-y-3">
-<label class="flex items-center justify-between group cursor-pointer">
-<span class="flex items-center gap-2 text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-<input checked="" class="rounded border-white/20 bg-white/5 text-primary focus:ring-primary" type="checkbox"/>
-                            Traverse Path
-                        </span>
-<span class="material-symbols-outlined text-accent text-lg">gesture</span>
-</label>
-<input class="w-full opacity-slider" max="100" min="0" type="range" value="90"/>
-</div>
-</div>
-</aside>
-<!-- Center Area: Map -->
-<section class="flex-1 relative glass rounded-xl overflow-hidden group">
-<!-- Mock Map Background -->
-<div class="absolute inset-0 z-0">
-<div class="w-full h-full bg-cover bg-center opacity-80 mix-blend-screen" data-alt="A hyper-realistic high-resolution satellite imagery top-down view of a massive lunar crater, specifically Shackleton crater, with dramatic shadows and sharp topographic details of the moon's regolith surface. The lighting is harsh and directional from a low-angle lunar sun, emphasizing crater walls and peaks. Deep indigo shadows contrast with brilliant white sunlit rims. Overlaid is a subtle cyan-colored glow heatmap indicating polar ice deposits inside the shadowed regions. The overall aesthetic is dark, cinematic, and scientifically accurate to NASA lunar missions." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD9VxLPrQV5SwMZLNyCBy4wP_n5JoYj9D9vessUqVk6W3ZelRKpjmuKNByafIUFXOorrNRwnPNhIn3BsUwYlbSMB2NlDFb1cPDDWEtX37n_WZtrcKQ1oyXG4Fd5XLdelPK94HtyP8RbJJOgmcYj--bEGQwce7LtwgCKzS9_L6actQCbtv-TqQZLNtZS-23FS3K7WINMsbsT5XzZJ9_qsWLCZ4Xzmhx6w9wCRUY4Q8p6K513JDRBiDBS2JQXI0FEfKMam_RccF1HwWI')"></div>
-</div>
-<!-- SVG Overlay for Traverse Path -->
-<svg class="absolute inset-0 w-full h-full z-10 pointer-events-none" preserveaspectratio="xMidYMid slice" viewbox="0 0 1000 1000">
-<defs>
-<filter id="glow">
-<fegaussianblur result="coloredBlur" stddeviation="2.5"></fegaussianblur>
-<femerge>
-<femergenode in="coloredBlur"></femergenode>
-<femergenode in="SourceGraphic"></femergenode>
-</femerge>
-</filter>
-</defs>
-<!-- Path -->
-<path class="traverse-path" d="M 200 800 Q 300 700, 450 750 T 700 600 T 800 300" fill="transparent" stroke="#00D4AA" stroke-linecap="round" stroke-width="4" style="filter: url(#glow);"></path>
-<!-- Start Point -->
-<circle cx="200" cy="800" fill="#00D4AA" r="8"></circle>
-<circle class="animate-ping" cx="200" cy="800" fill="transparent" r="12" stroke="#00D4AA" stroke-width="2"></circle>
-<!-- End Point -->
-<circle cx="800" cy="300" fill="#FF6B9D" r="8"></circle>
-<circle class="animate-ping" cx="800" cy="300" fill="transparent" r="12" stroke="#FF6B9D" stroke-width="2"></circle>
-</svg>
-<!-- Map Controls (UI elements on top of map) -->
-<div class="absolute top-4 right-4 flex flex-col gap-2 z-20">
-<button class="w-10 h-10 glass rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-<span class="material-symbols-outlined">add</span>
-</button>
-<button class="w-10 h-10 glass rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-<span class="material-symbols-outlined">remove</span>
-</button>
-<button class="w-10 h-10 glass rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-<span class="material-symbols-outlined">explore</span>
-</button>
-</div>
-<div class="absolute bottom-4 left-4 z-20 flex gap-4">
-<div class="px-4 py-2 glass rounded-full flex items-center gap-2 text-xs font-label">
-<span class="w-2 h-2 rounded-full bg-secondary"></span>
-                    ICE CONFIDENCE: HIGH
+        <div style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-secondary);">
+            GRID COORDS: <span style="color:#FFFFFF; font-weight:700;">89.9°S, 0.0°E (SHACKLETON)</span>
+        </div>
+    </div>
+
+    <div class="explorer-layout">
+        <!-- Left Panel: Layer Controls -->
+        <div class="panel-box">
+            <div class="panel-title">RASTER LAYERS</div>
+            
+            <div class="layer-toggle active" onclick="toggleLayer(this)">
+                <span class="layer-name">S-BAND CPR RASTER</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">radar</span>
+            </div>
+            <div class="layer-toggle active" onclick="toggleLayer(this)">
+                <span class="layer-name">L-BAND DECOMPOSITION</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">layers</span>
+            </div>
+            <div class="layer-toggle active" onclick="toggleLayer(this)">
+                <span class="layer-name">ICE PROBABILITY MASK</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">ac_unit</span>
+            </div>
+            <div class="layer-toggle" onclick="toggleLayer(this)">
+                <span class="layer-name">LOLA DEM ELEVATION</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">terrain</span>
+            </div>
+            <div class="layer-toggle" onclick="toggleLayer(this)">
+                <span class="layer-name">SLOPE HAZARD MAP</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">warning</span>
+            </div>
+
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; margin-top:8px;">
+                <div style="font-family:'JetBrains Mono'; font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">
+                    CPR INTENSITY FILTER
                 </div>
-<div class="px-4 py-2 glass rounded-full flex items-center gap-2 text-xs font-label">
-<span class="w-2 h-2 rounded-full bg-accent"></span>
-                    PATH SLOPE: 14.2°
-                </div>
-</div>
-</section>
-<!-- Right Sidebar: Stats -->
-<aside class="w-80 flex flex-col gap-6 overflow-y-auto">
-<!-- Crater Info Card -->
-<div class="glass rounded-xl p-5 hover:scale-[1.02] transition-all duration-300">
-<div class="flex justify-between items-start mb-4">
-<h3 class="font-headline font-bold text-white/60 uppercase text-xs tracking-widest">Crater Info</h3>
-<span class="material-symbols-outlined text-primary">info</span>
-</div>
-<div class="space-y-4">
-<div>
-<p class="text-2xl font-headline font-bold text-white">Shackleton-7</p>
-<p class="text-xs text-white/40 font-label">LOC: 89.9°S 0.0°E</p>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<p class="text-xs text-white/40 uppercase mb-1">Diameter</p>
-<p class="font-label text-secondary">21.0 <span class="text-[10px]">km</span></p>
-</div>
-<div>
-<p class="text-xs text-white/40 uppercase mb-1">Depth</p>
-<p class="font-label text-secondary">4.2 <span class="text-[10px]">km</span></p>
-</div>
-</div>
-</div>
-</div>
-<!-- Ice Stats Card -->
-<div class="glass rounded-xl p-5 hover:scale-[1.02] transition-all duration-300">
-<div class="flex justify-between items-start mb-4">
-<h3 class="font-headline font-bold text-white/60 uppercase text-xs tracking-widest">Ice Analysis</h3>
-<span class="material-symbols-outlined text-secondary">analytics</span>
-</div>
-<div class="space-y-4">
-<div class="flex items-baseline gap-2">
-<span class="text-4xl font-headline font-bold text-white count-up" data-target="842">0</span>
-<span class="text-secondary font-label">kg/m³</span>
-</div>
-<div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-<div class="h-full bg-secondary w-[84%] shadow-[0_0_8px_#00D4AA]"></div>
-</div>
-<p class="text-xs text-white/50 leading-relaxed italic">High concentration detected in permanently shadowed regions (PSR).</p>
-</div>
-</div>
-<!-- Traverse Stats Card -->
-<div class="glass rounded-xl p-5 hover:scale-[1.02] transition-all duration-300">
-<div class="flex justify-between items-start mb-4">
-<h3 class="font-headline font-bold text-white/60 uppercase text-xs tracking-widest">Traverse Path</h3>
-<span class="material-symbols-outlined text-accent">route</span>
-</div>
-<div class="space-y-4">
-<div class="flex justify-between">
-<div>
-<p class="text-[10px] text-white/40 uppercase mb-1">Total Distance</p>
-<p class="text-xl font-label text-white"><span class="count-up" data-target="12.4">0</span> km</p>
-</div>
-<div class="text-right">
-<p class="text-[10px] text-white/40 uppercase mb-1">Avg Slope</p>
-<p class="text-xl font-label text-white"><span class="count-up" data-target="8.5">0</span>°</p>
-</div>
-</div>
-<div class="flex justify-between">
-<div>
-<p class="text-[10px] text-white/40 uppercase mb-1">Est. Time</p>
-<p class="text-xl font-label text-white"><span class="count-up" data-target="142">0</span> m</p>
-</div>
-<div class="text-right">
-<p class="text-[10px] text-white/40 uppercase mb-1">Risk Factor</p>
-<p class="text-xl font-label text-accent">LOW</p>
-</div>
-</div>
-</div>
-</div>
-</aside>
-</main>
-<!-- Bottom Bar: Histogram -->
-<footer class="h-40 px-6 py-4 z-20">
-<div class="glass rounded-xl w-full h-full flex flex-col p-4">
-<div class="flex justify-between items-center mb-2">
-<h4 class="text-xs font-headline font-bold tracking-widest text-white/40 uppercase">CPR Distribution (Circular Polarization Ratio)</h4>
-<div class="flex gap-4 items-center">
-<div class="flex items-center gap-1.5 text-[10px] font-label text-white/60">
-<span class="w-2 h-2 bg-secondary rounded-full"></span> ICE DETECTED (&gt;1.0)
-                    </div>
-<div class="flex items-center gap-1.5 text-[10px] font-label text-white/60">
-<span class="w-2 h-2 bg-white/20 rounded-full"></span> REGOLITH
-                    </div>
-</div>
-</div>
-<div class="flex-1 flex items-end gap-[2px] relative overflow-hidden">
-<!-- Threshold line at 1.0 CPR -->
-<div class="absolute left-[65%] top-0 bottom-0 w-px bg-secondary/50 z-10 before:content-['CPR_1.0'] before:absolute before:-top-1 before:left-2 before:text-[8px] before:text-secondary before:font-label"></div>
-<!-- Randomly generated bars for visualization -->
-<div class="h-[20%] w-full bg-white/10 bar-grow" style="animation-delay: 0.1s"></div>
-<div class="h-[30%] w-full bg-white/10 bar-grow" style="animation-delay: 0.15s"></div>
-<div class="h-[45%] w-full bg-white/10 bar-grow" style="animation-delay: 0.2s"></div>
-<div class="h-[25%] w-full bg-white/10 bar-grow" style="animation-delay: 0.1s"></div>
-<div class="h-[60%] w-full bg-white/10 bar-grow" style="animation-delay: 0.3s"></div>
-<div class="h-[35%] w-full bg-white/10 bar-grow" style="animation-delay: 0.25s"></div>
-<div class="h-[50%] w-full bg-white/10 bar-grow" style="animation-delay: 0.35s"></div>
-<div class="h-[15%] w-full bg-white/10 bar-grow" style="animation-delay: 0.4s"></div>
-<div class="h-[40%] w-full bg-white/10 bar-grow" style="animation-delay: 0.2s"></div>
-<div class="h-[75%] w-full bg-white/10 bar-grow" style="animation-delay: 0.15s"></div>
-<div class="h-[55%] w-full bg-white/10 bar-grow" style="animation-delay: 0.3s"></div>
-<div class="h-[42%] w-full bg-white/10 bar-grow" style="animation-delay: 0.45s"></div>
-<div class="h-[30%] w-full bg-white/10 bar-grow" style="animation-delay: 0.2s"></div>
-<div class="h-[20%] w-full bg-white/10 bar-grow" style="animation-delay: 0.1s"></div>
-<div class="h-[15%] w-full bg-white/10 bar-grow" style="animation-delay: 0.25s"></div>
-<div class="h-[48%] w-full bg-white/10 bar-grow" style="animation-delay: 0.3s"></div>
-<!-- Transition to "Ice" zone (colored secondary) -->
-<div class="h-[65%] w-full bg-secondary/80 shadow-[0_0_10px_#00D4AA] bar-grow" style="animation-delay: 0.5s"></div>
-<div class="h-[85%] w-full bg-secondary/80 shadow-[0_0_10px_#00D4AA] bar-grow" style="animation-delay: 0.6s"></div>
-<div class="h-[95%] w-full bg-secondary/80 shadow-[0_0_10px_#00D4AA] bar-grow" style="animation-delay: 0.7s"></div>
-<div class="h-[70%] w-full bg-secondary/80 shadow-[0_0_10px_#00D4AA] bar-grow" style="animation-delay: 0.55s"></div>
-<div class="h-[40%] w-full bg-secondary/80 shadow-[0_0_10px_#00D4AA] bar-grow" style="animation-delay: 0.65s"></div>
-<div class="h-[25%] w-full bg-secondary/80 shadow-[0_0_10px_#00D4AA] bar-grow" style="animation-delay: 0.7s"></div>
-</div>
-<div class="flex justify-between mt-1 text-[8px] font-label text-white/30 px-1">
-<span>0.0 CPR</span>
-<span>0.5 CPR</span>
-<span class="text-secondary">1.0 CPR</span>
-<span>1.5 CPR</span>
-<span>2.0 CPR</span>
-</div>
-</div>
-</footer>
-<!-- Footer (Shared Component - Hidden usually in Data Explorer but added for completeness as per JSON) -->
-<div class="w-full py-8 px-12 flex justify-between items-center bg-[#0B0D1A]/80 backdrop-blur-md border-t border-white/5 bottom-0">
-<div class="font-headline text-xl font-bold text-white">LunarSight</div>
-<div class="font-body text-sm text-white/50">© 2024 LunarSight Mission Control. All rights reserved.</div>
-<div class="flex gap-6">
-<a class="text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Privacy Policy</a>
-<a class="text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Terms of Service</a>
-<a class="text-white/40 hover:text-[#FF6B9D] transition-colors" href="#">Mission Logs</a>
-</div>
-</div>
-<script>
-        // Count-up Animation Logic
-        function animateValue(obj, start, end, duration) {
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const value = (progress * (end - start) + start).toFixed(obj.innerText.includes('.') ? 1 : 0);
-                obj.innerHTML = value;
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
+                <input type="range" min="0" max="100" value="75" style="width:100%; accent-color:#FFFFFF;" />
+            </div>
+        </div>
+
+        <!-- Center Stage: Radar GIS Map -->
+        <div class="map-stage">
+            <div class="hud-overlay-tag">
+                SURVEY TARGET: SHACKLETON CRATER INTERIOR (PSR 89.9°S)
+            </div>
+            <canvas id="radar-canvas"></canvas>
+        </div>
+
+        <!-- Right Panel: Telemetry Analysis -->
+        <div class="panel-box">
+            <div class="panel-title">TELEMETRY READOUT</div>
+
+            <div class="metric-card">
+                <div class="metric-val">89.9°S 0.0°E</div>
+                <div class="metric-lbl">SELECTED CRATER COORDS</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-val">1.48</div>
+                <div class="metric-lbl">CIRCULAR POLARIZATION RATIO</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-val">94.8%</div>
+                <div class="metric-lbl">SUBSURFACE ICE PROBABILITY</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-val">1,840 km²</div>
+                <div class="metric-lbl">TOTAL SURVEYED PSR AREA</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-val">5.8 wt%</div>
+                <div class="metric-lbl">ESTIMATED VOLATILE FRACTION</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GIS Interactive Canvas Script -->
+    <script>
+        (function initRadarGIS() {
+            const canvas = document.getElementById('radar-canvas');
+            const container = canvas.parentElement;
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                draw();
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            function draw() {
+                const w = canvas.width;
+                const h = canvas.height;
+
+                // Background Void
+                ctx.fillStyle = '#050508';
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid Lines (Vector Radar Coordinate System)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.lineWidth = 1;
+                const gridSize = 40;
+                for (let x = 0; x < w; x += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
                 }
-            };
-            window.requestAnimationFrame(step);
-        }
+                for (let y = 0; y < h; y += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const counters = document.querySelectorAll('.count-up');
-            counters.forEach(counter => {
-                const target = parseFloat(counter.getAttribute('data-target'));
-                animateValue(counter, 0, target, 2000);
-            });
+                // Concentric Radar Rings
+                const cx = w / 2;
+                const cy = h / 2;
+                for (let r = 80; r < Math.max(w, h); r += 90) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
 
-            // Map interaction simulation
-            const mapContainer = document.querySelector('section.relative.glass');
-            mapContainer.addEventListener('mousemove', (e) => {
-                const rect = mapContainer.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                // Subtle shadow movement or interaction could go here
-            });
-        });
+                // Shackleton Crater Rim Simulation
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 140, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // High CPR Subsurface Ice Cluster Anomalies (Monochrome High Luminance)
+                const iceSpots = [
+                    {x: cx - 30, y: cy + 40, r: 35},
+                    {x: cx + 50, y: cy - 20, r: 28},
+                    {x: cx - 10, y: cy - 50, r: 22}
+                ];
+
+                for (let spot of iceSpots) {
+                    const grad = ctx.createRadialGradient(spot.x, spot.y, 2, spot.x, spot.y, spot.r);
+                    grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                    grad.addColorStop(0.5, 'rgba(200, 210, 230, 0.4)');
+                    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(spot.x, spot.y, spot.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Targeting Reticle Crosshair
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20); ctx.stroke();
+            }
+
+            function toggleLayer(el) {
+                el.classList.toggle('active');
+            }
+            window.toggleLayer = toggleLayer;
+        })();
     </script>
-</body></html>
+</body>
+</html>

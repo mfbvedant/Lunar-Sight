@@ -1,335 +1,283 @@
 <!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LunarSight — Autonomous Multi-Agent Swarm Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>LunarSight - The Agent Collective</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;600;700;900&amp;family=Space+Mono&amp;family=Public+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            bg: "#0B0D1A",
-                            primary: "#6C63FF",
-                            secondary: "#00D4AA",
-                            accent: "#FF6B9D",
-                            surface: "rgba(255, 255, 255, 0.05)",
-                            border: "rgba(255, 255, 255, 0.1)"
-                        }
-                    },
-                    fontFamily: {
-                        headline: ["Space Grotesk", "sans-serif"],
-                        display: ["Space Grotesk", "sans-serif"],
-                        body: ["Inter", "sans-serif"],
-                        label: ["Space Mono", "monospace"], // Using Space Mono for tech readouts
-                        public: ["Public Sans", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "1rem",
-                        "xl": "1.5rem",
-                        "full": "9999px"
-                    },
-                    boxShadow: {
-                        'glow-primary': '0 0 20px rgba(108, 99, 255, 0.2)',
-                        'glow-primary-hover': '0 0 30px rgba(108, 99, 255, 0.4)',
-                        'glow-secondary': '0 0 15px rgba(0, 212, 170, 0.2)',
-                        'glow-accent': '0 0 15px rgba(255, 107, 157, 0.2)',
-                    },
-                    animation: {
-                        'fade-up': 'fadeUp 0.6s ease-out forwards',
-                        'spin-slow': 'spin 8s linear infinite',
-                    },
-                    keyframes: {
-                        fadeUp: {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    }
-                },
-            },
+        :root {
+            --bg: #000000;
+            --surface-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.12);
+            --border-glass-active: rgba(255, 255, 255, 0.4);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-muted: rgba(255, 255, 255, 0.4);
         }
-    </script>
-<style>
+
         body {
-            background-color: #0B0D1A;
-            color: white;
-            position: relative;
-            overflow-x: hidden;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 85px 4% 40px 4%;
+            user-select: none;
         }
 
-        /* Star field background */
-        .stars, .twinkling {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            z-index: -2;
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 16px;
         }
 
-        .stars {
-            background: #0B0D1A url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="0.5" fill="white" opacity="0.3"/><circle cx="50" cy="80" r="0.3" fill="white" opacity="0.4"/><circle cx="120" cy="30" r="0.8" fill="white" opacity="0.2"/><circle cx="180" cy="150" r="0.4" fill="white" opacity="0.5"/><circle cx="70" cy="190" r="0.6" fill="white" opacity="0.3"/></svg>') repeat top center;
-            z-index: -3;
+        .header-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
         }
 
-        .twinkling {
-            background: transparent url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="110" r="1" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.2"/><circle cx="160" cy="90" r="0.8" fill="white" opacity="0.1"/><circle cx="30" cy="160" r="0.4" fill="white" opacity="0.3"/><circle cx="140" cy="180" r="0.7" fill="white" opacity="0.2"/></svg>') repeat top center;
-            animation: move-twink-back 200s linear infinite;
+        .header-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            letter-spacing: 0.08em;
         }
 
-        @keyframes move-twink-back {
-            from {background-position: 0 0;}
-            to {background-position: -10000px 5000px;}
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        .agent-card {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 24px;
+            backdrop-filter: blur(24px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        .glass-panel:hover {
+        .agent-card:hover {
+            border-color: #FFFFFF;
             background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(108, 99, 255, 0.3);
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 25px rgba(108, 99, 255, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 255, 255, 0.1);
         }
 
-        .glass-panel:hover .agent-number {
-            transform: rotate(360deg);
-            box-shadow: 0 0 15px rgba(108, 99, 255, 0.8);
+        .agent-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
         }
 
-        .glass-panel:hover .capability-icon {
-            transform: translateX(0);
-            opacity: 1;
+        .agent-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
         }
 
-        .capability-icon {
-            transform: translateX(-10px);
-            opacity: 0.5;
-            transition: all 0.3s ease;
+        .agent-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            color: #FFFFFF;
+            font-weight: 700;
         }
 
-        .agent-number {
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .agent-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 8px;
         }
 
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
-        .stagger-6 { animation-delay: 0.6s; }
+        .agent-role {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .capability-list {
+            list-style: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 14px;
+            margin-top: 10px;
+        }
+
+        .capability-item {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .capability-item::before {
+            content: '▪';
+            color: #FFFFFF;
+        }
+
+        @media (max-width: 1024px) {
+            .agents-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
-<body class="font-body text-white min-h-screen flex flex-col">
-<!-- Background Effects -->
-<div class="stars"></div>
-<div class="twinkling"></div>
-<!-- TopNavBar -->
-<nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_0_20px_rgba(108,99,255,0.2)] rounded-full mt-4 mx-auto w-[95%] max-w-7xl">
-<div class="flex items-center gap-4">
-<span class="font-headline text-2xl font-black text-white bg-clip-text text-transparent bg-gradient-to-r from-[#6C63FF] to-[#FF6B9D]">LunarSight</span>
-</div>
-<div class="hidden md:flex items-center gap-8">
-<a class="text-white/70 hover:text-white transition-colors font-headline text-lg uppercase tracking-wider font-bold" href="#">Pipeline</a>
-<a class="text-[#6C63FF] border-b-2 border-[#6C63FF] pb-1 font-headline text-lg uppercase tracking-wider font-bold hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300" href="#">Agents</a>
-<a class="text-white/70 hover:text-white transition-colors font-headline text-lg uppercase tracking-wider font-bold" href="#">Data Explorer</a>
-<a class="text-white/70 hover:text-white transition-colors font-headline text-lg uppercase tracking-wider font-bold" href="#">Pathfinder</a>
-<a class="text-white/70 hover:text-white transition-colors font-headline text-lg uppercase tracking-wider font-bold" href="#">About</a>
-</div>
-<div class="hidden md:flex items-center gap-4">
-<button class="text-white/70 hover:text-white transition-colors font-headline uppercase tracking-wider text-sm font-bold scale-95 active:opacity-80">Explore Data</button>
-<button class="bg-[#6C63FF] text-white px-6 py-2 rounded-full font-headline uppercase tracking-wider text-sm font-bold shadow-2xl shadow-indigo-500/10 hover:scale-105 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] transition-all duration-300 scale-95 active:opacity-80">Launch Pipeline</button>
-</div>
-<!-- Mobile Menu Button -->
-<button class="md:hidden text-white">
-<span class="material-symbols-outlined">menu</span>
-</button>
-</nav>
-<!-- Main Content -->
-<main class="flex-grow pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10">
-<!-- Header Section -->
-<header class="text-center mb-16 opacity-0 animate-fade-up">
-<h1 class="font-headline font-black text-5xl md:text-7xl mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-brand-primary tracking-tight">
-                The Agent Collective
-            </h1>
-<p class="font-body text-xl md:text-2xl text-white/60 max-w-3xl mx-auto leading-relaxed">
-                5 specialized agents work together to detect lunar ice and plan rover traverses.
-            </p>
-</header>
-<!-- Agents Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-<!-- Agent 1 -->
-<div class="glass-panel rounded-xl p-8 flex flex-col h-full opacity-0 animate-fade-up stagger-1 relative overflow-hidden group">
-<div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl group-hover:bg-brand-primary/20 transition-all duration-500"></div>
-<div class="flex justify-between items-start mb-6 relative z-10">
-<div class="w-12 h-12 rounded-lg bg-brand-surface flex items-center justify-center text-brand-primary border border-brand-border">
-<span class="material-symbols-outlined text-3xl">database</span>
-</div>
-<div class="agent-number w-10 h-10 rounded-full border border-brand-primary/50 flex items-center justify-center font-label text-brand-primary font-bold shadow-glow-primary">
-                        01
-                    </div>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-2 text-white">Data Ingestion</h3>
-<p class="font-body text-white/50 italic text-sm mb-6 flex-grow">Downloads, reprojects, and builds tensors from DFSAR radar data</p>
-<div class="h-px w-full bg-gradient-to-r from-brand-primary/50 to-transparent mb-6"></div>
-<ul class="space-y-3 mb-8 font-label text-xs text-white/80">
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> PDS4 Parsing</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Polar Stereographic Reprojection</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Horn's Slope Algorithm</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Multi-channel Tensor Building</li>
-</ul>
-<button class="w-full py-3 rounded-lg border border-brand-border hover:border-brand-primary hover:bg-brand-primary/10 transition-colors font-headline text-sm font-bold text-white/80 hover:text-white mt-auto">
-                    View Details
-                </button>
-</div>
-<!-- Agent 2 -->
-<div class="glass-panel rounded-xl p-8 flex flex-col h-full opacity-0 animate-fade-up stagger-2 relative overflow-hidden group">
-<div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-3xl group-hover:bg-brand-accent/20 transition-all duration-500"></div>
-<div class="flex justify-between items-start mb-6 relative z-10">
-<div class="w-12 h-12 rounded-lg bg-brand-surface flex items-center justify-center text-brand-accent border border-brand-border">
-<span class="material-symbols-outlined text-3xl">blur_on</span>
-</div>
-<div class="agent-number w-10 h-10 rounded-full border border-brand-accent/50 flex items-center justify-center font-label text-brand-accent font-bold shadow-glow-accent">
-                        02
-                    </div>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-2 text-white">SAR Despeckling</h3>
-<p class="font-body text-white/50 italic text-sm mb-6 flex-grow">Complex-Valued CNN removes speckle noise while preserving polarimetric phase</p>
-<div class="h-px w-full bg-gradient-to-r from-brand-accent/50 to-transparent mb-6"></div>
-<ul class="space-y-3 mb-8 font-label text-xs text-white/80">
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Complex Conv Layers</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Phase-Preserving</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Hann Window Blending</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Self-Supervised Training</li>
-</ul>
-<button class="w-full py-3 rounded-lg border border-brand-border hover:border-brand-accent hover:bg-brand-accent/10 transition-colors font-headline text-sm font-bold text-white/80 hover:text-white mt-auto">
-                    View Details
-                </button>
-</div>
-<!-- Agent 3 -->
-<div class="glass-panel rounded-xl p-8 flex flex-col h-full opacity-0 animate-fade-up stagger-3 relative overflow-hidden group">
-<div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-secondary/10 rounded-full blur-3xl group-hover:bg-brand-secondary/20 transition-all duration-500"></div>
-<div class="flex justify-between items-start mb-6 relative z-10">
-<div class="w-12 h-12 rounded-lg bg-brand-surface flex items-center justify-center text-brand-secondary border border-brand-border">
-<span class="material-symbols-outlined text-3xl">waves</span>
-</div>
-<div class="agent-number w-10 h-10 rounded-full border border-brand-secondary/50 flex items-center justify-center font-label text-brand-secondary font-bold shadow-glow-secondary">
-                        03
-                    </div>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-2 text-white">Polarimetric Analysis</h3>
-<p class="font-body text-white/50 italic text-sm mb-6 flex-grow">Extracts Stokes parameters, CPR, and m-χ decomposition for ice signatures</p>
-<div class="h-px w-full bg-gradient-to-r from-brand-secondary/50 to-transparent mb-6"></div>
-<ul class="space-y-3 mb-8 font-label text-xs text-white/80">
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Stokes S1-S4</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Circular Polarization Ratio</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> m-χ Decomposition</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Sinha et al. Thresholds</li>
-</ul>
-<button class="w-full py-3 rounded-lg border border-brand-border hover:border-brand-secondary hover:bg-brand-secondary/10 transition-colors font-headline text-sm font-bold text-white/80 hover:text-white mt-auto">
-                    View Details
-                </button>
-</div>
-<!-- Agent 4 -->
-<div class="glass-panel rounded-xl p-8 flex flex-col h-full opacity-0 animate-fade-up stagger-4 relative overflow-hidden group">
-<div class="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-all duration-500"></div>
-<div class="flex justify-between items-start mb-6 relative z-10">
-<div class="w-12 h-12 rounded-lg bg-brand-surface flex items-center justify-center text-white border border-brand-border">
-<span class="material-symbols-outlined text-3xl">join_inner</span>
-</div>
-<div class="agent-number w-10 h-10 rounded-full border border-white/50 flex items-center justify-center font-label text-white font-bold shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                        04
-                    </div>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-2 text-white">Ice Segmentation</h3>
-<p class="font-body text-white/50 italic text-sm mb-6 flex-grow">Weakly-supervised U-Net produces binary ice mask from pseudo-labels</p>
-<div class="h-px w-full bg-gradient-to-r from-white/50 to-transparent mb-6"></div>
-<ul class="space-y-3 mb-8 font-label text-xs text-white/80">
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Physics-Based Pseudo Labels</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> SMP U-Net</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> NaN-Masked Loss</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Self-Training Iterations</li>
-</ul>
-<button class="w-full py-3 rounded-lg border border-brand-border hover:border-white/50 hover:bg-white/5 transition-colors font-headline text-sm font-bold text-white/80 hover:text-white mt-auto">
-                    View Details
-                </button>
-</div>
-<!-- Agent 5 -->
-<div class="glass-panel rounded-xl p-8 flex flex-col h-full opacity-0 animate-fade-up stagger-5 relative overflow-hidden group">
-<div class="absolute -top-10 -right-10 w-32 h-32 bg-[#FFD700]/10 rounded-full blur-3xl group-hover:bg-[#FFD700]/20 transition-all duration-500"></div>
-<div class="flex justify-between items-start mb-6 relative z-10">
-<div class="w-12 h-12 rounded-lg bg-brand-surface flex items-center justify-center text-[#FFD700] border border-brand-border">
-<span class="material-symbols-outlined text-3xl">route</span>
-</div>
-<div class="agent-number w-10 h-10 rounded-full border border-[#FFD700]/50 flex items-center justify-center font-label text-[#FFD700] font-bold shadow-[0_0_15px_rgba(255,215,0,0.2)]">
-                        05
-                    </div>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-2 text-white">Pathfinding</h3>
-<p class="font-body text-white/50 italic text-sm mb-6 flex-grow">Kinodynamic A* plans physically survivable rover traverses</p>
-<div class="h-px w-full bg-gradient-to-r from-[#FFD700]/50 to-transparent mb-6"></div>
-<ul class="space-y-3 mb-8 font-label text-xs text-white/80">
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Mohr-Coulomb Terramechanics</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Battery+Thermal Constraints</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> 4D A* Search</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-secondary capability-icon">check_circle</span> Slip-Aware Costs</li>
-</ul>
-<button class="w-full py-3 rounded-lg border border-brand-border hover:border-[#FFD700] hover:bg-[#FFD700]/10 transition-colors font-headline text-sm font-bold text-white/80 hover:text-white mt-auto">
-                    View Details
-                </button>
-</div>
-<!-- Agent 6 (Orchestrator) -->
-<div class="glass-panel rounded-xl p-8 flex flex-col h-full opacity-0 animate-fade-up stagger-6 relative overflow-hidden group md:col-span-2 lg:col-span-1 border-brand-primary/30 bg-brand-primary/5">
-<div class="absolute inset-0 bg-gradient-to-br from-brand-primary/10 to-transparent opacity-50"></div>
-<div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-primary/20 rounded-full blur-3xl group-hover:bg-brand-primary/30 transition-all duration-500"></div>
-<div class="flex justify-between items-start mb-6 relative z-10">
-<div class="w-12 h-12 rounded-lg bg-brand-primary/20 flex items-center justify-center text-brand-primary border border-brand-primary/50">
-<span class="material-symbols-outlined text-3xl">hub</span>
-</div>
-<div class="agent-number w-10 h-10 rounded-full border border-brand-primary flex items-center justify-center font-label text-brand-primary font-bold shadow-glow-primary bg-brand-primary/10">
-<span class="material-symbols-outlined text-sm">settings_suggest</span>
-</div>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-2 text-white relative z-10">Orchestrator</h3>
-<p class="font-body text-white/70 italic text-sm mb-6 flex-grow relative z-10">LangGraph coordination with retry loops</p>
-<div class="h-px w-full bg-gradient-to-r from-brand-primary to-transparent mb-6 relative z-10"></div>
-<ul class="space-y-3 mb-8 font-label text-xs text-white/90 relative z-10">
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-primary capability-icon">check_circle</span> State Management</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-primary capability-icon">check_circle</span> Coverage Check</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-primary capability-icon">check_circle</span> Threshold Adaptation</li>
-<li class="flex items-center gap-3"><span class="material-symbols-outlined text-[16px] text-brand-primary capability-icon">check_circle</span> Path Relaxation</li>
-</ul>
-<button class="w-full py-3 rounded-lg border border-brand-primary bg-brand-primary/20 hover:bg-brand-primary/40 transition-colors font-headline text-sm font-bold text-white mt-auto relative z-10 shadow-glow-primary">
-                    View Master Flow
-                </button>
-</div>
-</div>
-</main>
-<!-- Footer -->
-<footer class="w-full bottom-0 bg-[#0B0D1A]/80 backdrop-blur-md border-t border-white/5 py-8 px-12 flex justify-between items-center relative z-20 mt-auto">
-<div class="flex flex-col gap-2">
-<span class="font-headline text-xl font-bold text-white">LunarSight</span>
-<span class="font-body text-sm text-white/50">© 2024 LunarSight Mission Control. All rights reserved.</span>
-</div>
-<div class="flex gap-6 font-body text-sm">
-<a class="text-[#00D4AA] opacity-100 hover:opacity-80 transition-all hover:text-[#FF6B9D]" href="#">Privacy Policy</a>
-<a class="text-white/40 opacity-100 hover:opacity-80 transition-all hover:text-[#FF6B9D]" href="#">Terms of Service</a>
-<a class="text-white/40 opacity-100 hover:opacity-80 transition-all hover:text-[#FF6B9D]" href="#">Mission Logs</a>
-</div>
-</footer>
-</body></html>
+<body>
+
+    <div class="header-bar">
+        <div>
+            <div class="header-title">AUTONOMOUS MULTI-AGENT AI SWARM</div>
+            <div class="header-sub">5 SPECIALIZED AGENTS COORDINATED VIA LANGGRAPH DIRECTED DAG</div>
+        </div>
+        <div style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-secondary);">
+            SWARM HEALTH: <span style="color:#FFFFFF; font-weight:700;">100% ONLINE (5/5 ACTIVE)</span>
+        </div>
+    </div>
+
+    <div class="agents-grid">
+        <!-- Agent 1 -->
+        <div class="agent-card">
+            <div>
+                <div class="agent-top">
+                    <span class="agent-id">AGENT_01 // INGESTION</span>
+                    <span class="agent-status-badge">ACTIVE</span>
+                </div>
+                <div class="agent-title">PDS4 Data Ingestion Agent</div>
+                <div class="agent-role">Retrieves, validates, and reprojects raw Chandrayaan-2 DFSAR L-Band and S-Band GeoTIFF payloads.</div>
+                
+                <ul class="capability-list">
+                    <li class="capability-item">PDS4 XML Header &amp; Raster Decoding</li>
+                    <li class="capability-item">Polar Stereographic (89.9°S) Projection</li>
+                    <li class="capability-item">Multi-channel Tensor Construction</li>
+                    <li class="capability-item">Horn Elevation Slope Gradient Calculation</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Agent 2 -->
+        <div class="agent-card">
+            <div>
+                <div class="agent-top">
+                    <span class="agent-id">AGENT_02 // DESPECKLING</span>
+                    <span class="agent-status-badge">ACTIVE</span>
+                </div>
+                <div class="agent-title">SAR Noise Despeckling Agent</div>
+                <div class="agent-role">Applies complex-valued convolutional neural networks to remove radar speckle while preserving polarimetric phase.</div>
+
+                <ul class="capability-list">
+                    <li class="capability-item">Refined Lee Filter (7x7 Window)</li>
+                    <li class="capability-item">Complex Phase-Preserving Despeckle</li>
+                    <li class="capability-item">Hann Window Tile Edge Blending</li>
+                    <li class="capability-item">Signal SNR Optimization (+14 dB)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Agent 3 -->
+        <div class="agent-card">
+            <div>
+                <div class="agent-top">
+                    <span class="agent-id">AGENT_03 // POLARIMETRY</span>
+                    <span class="agent-status-badge">ACTIVE</span>
+                </div>
+                <div class="agent-title">Polarimetric Decomposition Agent</div>
+                <div class="agent-role">Computes Stokes vector parameters (S0-S3), Circular Polarization Ratio (CPR), and m-chi decomposition for ice detection.</div>
+
+                <ul class="capability-list">
+                    <li class="capability-item">Stokes Vector Formulation (S0,S1,S2,S3)</li>
+                    <li class="capability-item">Circular Polarization Ratio (CPR &gt; 1.2)</li>
+                    <li class="capability-item">m-chi &amp; m-delta Decomposition</li>
+                    <li class="capability-item">Volatile Subsurface Scattering Isolation</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Agent 4 -->
+        <div class="agent-card">
+            <div>
+                <div class="agent-top">
+                    <span class="agent-id">AGENT_04 // SEGMENTATION</span>
+                    <span class="agent-status-badge">ACTIVE</span>
+                </div>
+                <div class="agent-title">U-Net Ice Segmentation Agent</div>
+                <div class="agent-role">Runs deep semantic segmentation U-Net to produce high-resolution binary ice deposit probability masks.</div>
+
+                <ul class="capability-list">
+                    <li class="capability-item">Weakly-Supervised Physics Pseudo-Labels</li>
+                    <li class="capability-item">Segmentation Models PyTorch U-Net</li>
+                    <li class="capability-item">NaN-Masked Loss Function</li>
+                    <li class="capability-item">Ice Deposit Confidence Scoring</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Agent 5 -->
+        <div class="agent-card">
+            <div>
+                <div class="agent-top">
+                    <span class="agent-id">AGENT_05 // PATHFINDER</span>
+                    <span class="agent-status-badge">ACTIVE</span>
+                </div>
+                <div class="agent-title">Rover Traverse Pathfinder Agent</div>
+                <div class="agent-role">Optimizes safe, energy-efficient lunar rover navigation routes based on DEM slopes, terramechanics, and solar power.</div>
+
+                <ul class="capability-list">
+                    <li class="capability-item">Kinodynamic A* / D* Lite Traversal</li>
+                    <li class="capability-item">Mohr-Coulomb Terramechanics Modeling</li>
+                    <li class="capability-item">Slope Hazard Avoidance (&gt;15°)</li>
+                    <li class="capability-item">Rover Energy Budget &amp; Battery Sim</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Agent 6 -->
+        <div class="agent-card" style="border-color:#FFFFFF; background:rgba(255,255,255,0.06);">
+            <div>
+                <div class="agent-top">
+                    <span class="agent-id">EXECUTIVE // ORCHESTRATOR</span>
+                    <span class="agent-status-badge" style="background:#FFFFFF; color:#000000;">MASTER</span>
+                </div>
+                <div class="agent-title">Executive Orchestrator Agent</div>
+                <div class="agent-role">Manages cross-agent DAG state execution, fallback retries, coverage checks, and mission constraint enforcement.</div>
+
+                <ul class="capability-list">
+                    <li class="capability-item">LangGraph DAG Control Flow</li>
+                    <li class="capability-item">Coverage Check &amp; Retry Loops</li>
+                    <li class="capability-item">Dynamic Threshold Adaptation</li>
+                    <li class="capability-item">Telemetried JSON Mission State Output</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
